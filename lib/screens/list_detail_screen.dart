@@ -6,6 +6,7 @@ import '../models/shopping_list.dart';
 import '../services/shopping_list_repository.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/item_form_dialog.dart';
+import 'barcode_scanner_screen.dart';
 
 class ListDetailScreen extends StatefulWidget {
   const ListDetailScreen({super.key, required this.listId});
@@ -31,6 +32,15 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     setState(() {
       _list = _repository.getListById(widget.listId);
     });
+  }
+
+  Future<void> _scanBarcode() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BarcodeScannerScreen(listId: widget.listId),
+      ),
+    );
+    _loadList();
   }
 
   Future<void> _addItem() async {
@@ -91,9 +101,16 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(list.name),
+        actions: [
+          IconButton(
+            onPressed: _scanBarcode,
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Escanear código de barras',
+          ),
+        ],
       ),
       body: list.items.isEmpty
-          ? _EmptyItemsState(onAddItem: _addItem)
+          ? _EmptyItemsState(onAddItem: _addItem, onScanBarcode: _scanBarcode)
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: list.items.length,
@@ -108,19 +125,37 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addItem,
-        icon: const Icon(Icons.add),
-        label: const Text('Adicionar item'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'scan',
+            onPressed: _scanBarcode,
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Escanear'),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'add',
+            onPressed: _addItem,
+            icon: const Icon(Icons.add),
+            label: const Text('Adicionar item'),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _EmptyItemsState extends StatelessWidget {
-  const _EmptyItemsState({required this.onAddItem});
+  const _EmptyItemsState({
+    required this.onAddItem,
+    required this.onScanBarcode,
+  });
 
   final VoidCallback onAddItem;
+  final VoidCallback onScanBarcode;
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +177,7 @@ class _EmptyItemsState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Adicione itens manualmente. Eles ficam salvos nesta lista.',
+              'Adicione itens manualmente ou escaneie o código de barras.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -150,9 +185,15 @@ class _EmptyItemsState extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
+              onPressed: onScanBarcode,
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Escanear código'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
               onPressed: onAddItem,
               icon: const Icon(Icons.add),
-              label: const Text('Adicionar item'),
+              label: const Text('Adicionar manualmente'),
             ),
           ],
         ),
@@ -186,9 +227,26 @@ class _ItemTile extends StatelessWidget {
 
     return Card(
       child: ListTile(
-        leading: Checkbox(
-          value: item.isPurchased,
-          onChanged: (_) => onToggle(),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Checkbox(
+              value: item.isPurchased,
+              onChanged: (_) => onToggle(),
+            ),
+            if (item.imageUrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  item.imageUrl!,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const SizedBox(width: 40, height: 40),
+                ),
+              ),
+          ],
         ),
         title: Text(
           item.name,

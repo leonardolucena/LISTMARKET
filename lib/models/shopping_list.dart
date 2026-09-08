@@ -52,7 +52,11 @@ class ShoppingList {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       items: (json['items'] as List<dynamic>? ?? [])
-          .map((item) => ListItem.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => ListItem.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
           .toList(),
     );
   }

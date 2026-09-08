@@ -18,8 +18,11 @@ class ItemFormResult {
 Future<ItemFormResult?> showItemFormDialog(
   BuildContext context, {
   ListItem? item,
+  String initialName = '',
+  String? dialogTitle,
+  String? helperText,
 }) {
-  final nameController = TextEditingController(text: item?.name ?? '');
+  final nameController = TextEditingController(text: item?.name ?? initialName);
   final priceController = TextEditingController(
     text: item?.price != null ? item!.price!.toStringAsFixed(2) : '',
   );
@@ -31,11 +34,21 @@ Future<ItemFormResult?> showItemFormDialog(
     context: context,
     builder: (context) {
       return AlertDialog(
-        title: Text(item == null ? 'Adicionar item' : 'Editar item'),
+        title: Text(dialogTitle ?? (item == null ? 'Adicionar item' : 'Editar item')),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (helperText != null) ...[
+                Text(
+                  helperText,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 12),
+              ],
               TextField(
                 controller: nameController,
                 autofocus: true,
