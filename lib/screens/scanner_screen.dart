@@ -2,17 +2,17 @@ import 'dart:async';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/list_item.dart';
 import '../models/product_lookup_result.dart';
 import '../models/scan_mode.dart';
-import '../services/label_text_parser.dart';
 import '../services/open_food_facts_service.dart';
 import '../services/shopping_list_repository.dart';
 import '../services/shelf_label_ocr_service.dart';
-import '../widgets/item_form_dialog.dart';
+import '../utils/currency_input_formatter.dart';
 import '../widgets/scanner_overlay.dart';
 
 class ScannerScreen extends StatefulWidget {
@@ -27,6 +27,24 @@ class ScannerScreen extends StatefulWidget {
 
   @override
   State<ScannerScreen> createState() => _ScannerScreenState();
+}
+
+class _PendingProduct {
+  _PendingProduct({
+    this.name = '',
+    this.brand,
+    this.price,
+    this.quantity = 1,
+    this.barcode,
+    this.imageUrl,
+  });
+
+  final String name;
+  final String? brand;
+  final double? price;
+  final int quantity;
+  final String? barcode;
+  final String? imageUrl;
 }
 
 class _ScannerScreenState extends State<ScannerScreen> {
@@ -48,8 +66,15 @@ class _ScannerScreenState extends State<ScannerScreen> {
   bool _torchEnabled = false;
   double _zoomLevel = 1.0;
 
+  _PendingProduct? _pendingProduct;
+  TextEditingController? _nameController;
+  TextEditingController? _priceController;
+  TextEditingController? _quantityController;
+
   Timer? _inactivityTimer;
   bool _showingBatterySaver = false;
+
+  bool get _isScanning => _pendingProduct == null;
 
   @override
   void initState() {
@@ -61,15 +86,27 @@ class _ScannerScreenState extends State<ScannerScreen> {
   @override
   void dispose() {
     _inactivityTimer?.cancel();
+    _disposeProductControllers();
     _barcodeController?.dispose();
     _cameraController?.dispose();
     _ocrService.dispose();
     super.dispose();
   }
 
+  void _disposeProductControllers() {
+    _nameController?.dispose();
+    _priceController?.dispose();
+    _quantityController?.dispose();
+    _nameController = null;
+    _priceController = null;
+    _quantityController = null;
+  }
+
   void _startInactivityTimer() {
     _inactivityTimer?.cancel();
-    if (!_isReady || _isProcessing || _showingBatterySaver) return;
+    if (!_isScanning || !_isReady || _isProcessing || _showingBatterySaver) {
+      return;
+    }
 
     _inactivityTimer = Timer(_inactivityDuration, _onInactivityTimeout);
   }
@@ -85,7 +122,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   Future<void> _onInactivityTimeout() async {
-    if (!mounted || _isProcessing || _showingBatterySaver) return;
+    if (!mounted || !_isScanning || _isProcessing || _showingBatterySaver) {
+      return;
+    }
     await _showBatterySaverDialog();
   }
 
@@ -118,10 +157,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   Future<void> _initCurrentMode() async {
     _pauseInactivityTimer();
-    setState(() {
-      _isReady = false;
-      _torchEnabled = false;
-    });
+    setState(() => _isReady = false);
 
     if (_mode == ScanMode.barcode) {
       await _initBarcodeScanner();
@@ -146,6 +182,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     setState(() {
       _barcodeController = controller;
       _isReady = true;
+      _torchEnabled = false;
     });
     _startInactivityTimer();
   }
@@ -180,6 +217,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       setState(() {
         _cameraController = controller;
         _isReady = true;
+        _torchEnabled = false;
         _zoomLevel = 1.0;
       });
       _startInactivityTimer();
@@ -191,15 +229,27 @@ class _ScannerScreenState extends State<ScannerScreen> {
     }
   }
 
+  Future<void> _stopCameras() async {
+    await _barcodeController?.stop();
+    if (mounted) {
+      setState(() => _isReady = false);
+    }
+  }
+
   Future<void> _switchMode(ScanMode mode) async {
     if (_mode == mode || _isProcessing) return;
     _resetInactivityTimer();
+
+    if (_pendingProduct != null) {
+      _clearPendingProduct(notify: false);
+    }
+
     setState(() => _mode = mode);
     await _initCurrentMode();
   }
 
   Future<void> _toggleTorch() async {
-    if (!_isReady || _isProcessing) return;
+    if (!_isScanning || !_isReady || _isProcessing) return;
     _resetInactivityTimer();
 
     if (_mode == ScanMode.barcode) {
@@ -235,8 +285,47 @@ class _ScannerScreenState extends State<ScannerScreen> {
     setState(() => _zoomLevel = target);
   }
 
+  void _setPendingProduct(_PendingProduct product) {
+    _disposeProductControllers();
+    _pauseInactivityTimer();
+    _stopCameras();
+
+    _nameController = TextEditingController(text: product.name);
+    _priceController = TextEditingController(
+      text: product.price != null
+          ? CurrencyInputFormatter.formatDouble(product.price!)
+          : '',
+    );
+    _quantityController = TextEditingController(
+      text: product.quantity.toString(),
+    );
+
+    setState(() => _pendingProduct = product);
+  }
+
+  Future<void> _clearPendingProduct({bool notify = true}) async {
+    _disposeProductControllers();
+    if (notify && mounted) {
+      setState(() => _pendingProduct = null);
+    } else {
+      _pendingProduct = null;
+    }
+    await _initCurrentMode();
+  }
+
+  Future<void> _handleBack() async {
+    if (_pendingProduct != null) {
+      await _clearPendingProduct();
+      return;
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   Future<void> _onBarcodeDetected(BarcodeCapture capture) async {
-    if (_mode != ScanMode.barcode || _isProcessing) return;
+    if (!_isScanning || _mode != ScanMode.barcode || _isProcessing) return;
 
     final barcode = capture.barcodes.firstOrNull?.rawValue?.trim();
     if (barcode == null || barcode.isEmpty) return;
@@ -254,29 +343,33 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
     switch (result) {
       case ProductLookupSuccess(:final product):
-        await _showProductFoundDialog(product);
+        _setPendingProduct(
+          _PendingProduct(
+            name: product.name,
+            brand: product.brand,
+            barcode: product.barcode,
+            imageUrl: product.imageUrl,
+          ),
+        );
       case ProductLookupNotFound(:final barcode):
-        await _showManualBarcodeEntry(
-          barcode: barcode,
-          message: 'Produto não encontrado na base de dados.',
+        _setPendingProduct(
+          _PendingProduct(barcode: barcode),
         );
       case ProductLookupConnectionError(:final barcode):
-        await _showManualBarcodeEntry(
-          barcode: barcode,
-          message: 'Sem conexão. Você pode adicionar o item manualmente.',
+        _setPendingProduct(
+          _PendingProduct(barcode: barcode),
         );
     }
 
-    if (!mounted) return;
-
-    setState(() => _isProcessing = false);
-    await _barcodeController?.start();
-    _resetInactivityTimer();
+    if (mounted) {
+      setState(() => _isProcessing = false);
+    }
   }
 
   Future<void> _captureAndScanLabel() async {
     final controller = _cameraController;
-    if (_mode != ScanMode.shelfLabel ||
+    if (!_isScanning ||
+        _mode != ScanMode.shelfLabel ||
         controller == null ||
         !controller.value.isInitialized ||
         _isProcessing) {
@@ -313,7 +406,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
         return;
       }
 
-      await _confirmShelfLabel(result);
+      _setPendingProduct(
+        _PendingProduct(
+          name: result.name ?? '',
+          price: result.price,
+        ),
+      );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -322,109 +420,45 @@ class _ScannerScreenState extends State<ScannerScreen> {
     } finally {
       if (mounted) {
         setState(() => _isProcessing = false);
-        _resetInactivityTimer();
       }
     }
   }
 
-  Future<void> _showProductFoundDialog(ProductInfo product) async {
-    final brandLine = product.brand != null && product.brand!.isNotEmpty
-        ? 'Marca: ${product.brand}\n'
-        : '';
+  void _openManualProduct() {
+    _resetInactivityTimer();
+    _setPendingProduct(_PendingProduct());
+  }
 
-    final formResult = await showItemFormDialog(
-      context,
-      initialName: product.name,
-      dialogTitle: 'Produto encontrado',
-      helperText: '${brandLine}Código: ${product.barcode}',
-      imageUrl: product.imageUrl,
+  Future<void> _confirmPendingProduct() async {
+    final name = _nameController?.text.trim() ?? '';
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informe o nome do produto')),
+      );
+      return;
+    }
+
+    final price = CurrencyInputFormatter.parseFormattedPrice(
+      _priceController?.text ?? '',
     );
-
-    if (formResult == null || !mounted) return;
+    final quantity =
+        int.tryParse(_quantityController?.text.trim() ?? '') ?? 1;
 
     await _saveItem(
       ListItem(
         id: _uuid.v4(),
-        name: formResult.name,
-        brand: product.brand,
-        price: formResult.price,
-        quantity: formResult.quantity,
-        barcode: product.barcode,
-        imageUrl: product.imageUrl,
+        name: name,
+        brand: _pendingProduct?.brand,
+        price: price,
+        quantity: quantity < 1 ? 1 : quantity,
+        barcode: _pendingProduct?.barcode,
+        imageUrl: _pendingProduct?.imageUrl,
       ),
     );
-  }
 
-  Future<void> _showManualBarcodeEntry({
-    required String barcode,
-    required String message,
-  }) async {
     if (!mounted) return;
 
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Adicionar manualmente'),
-          content: Text('$message\n\nCódigo: $barcode'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _openManualForm(barcode: barcode);
-              },
-              child: const Text('Digitar nome'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _openManualForm({String? barcode}) async {
-    final formResult = await showItemFormDialog(
-      context,
-      initialName: '',
-      dialogTitle: 'Adicionar item',
-      helperText: barcode != null ? 'Código de barras: $barcode' : null,
-    );
-
-    if (formResult == null || !mounted) return;
-
-    await _saveItem(
-      ListItem(
-        id: _uuid.v4(),
-        name: formResult.name,
-        price: formResult.price,
-        quantity: formResult.quantity,
-        barcode: barcode,
-      ),
-    );
-  }
-
-  Future<void> _confirmShelfLabel(ShelfLabelScanResult result) async {
-    final formResult = await showItemFormDialog(
-      context,
-      initialName: result.name ?? '',
-      initialPrice: result.price?.toStringAsFixed(2) ?? '',
-      dialogTitle: 'Item da etiqueta',
-      helperText: 'Confira o nome e o preço antes de salvar.',
-    );
-
-    if (formResult == null || !mounted) return;
-
-    await _saveItem(
-      ListItem(
-        id: _uuid.v4(),
-        name: formResult.name,
-        price: formResult.price,
-        quantity: formResult.quantity,
-      ),
-    );
+    await _clearPendingProduct();
   }
 
   Future<void> _saveItem(ListItem item) async {
@@ -457,127 +491,413 @@ class _ScannerScreenState extends State<ScannerScreen> {
     return CameraPreview(controller);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final guide = _mode.guideSize;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('Escanear produto'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        actions: [
-          if (_isReady)
-            IconButton(
-              onPressed: _isProcessing ? null : _toggleTorch,
-              icon: Icon(_torchEnabled ? Icons.flash_on : Icons.flash_off),
-              tooltip: 'Lanterna',
-            ),
-        ],
-      ),
-      body: Listener(
-        onPointerDown: (_) => _resetInactivityTimer(),
-        child: Stack(
-        fit: StackFit.expand,
-        children: [
-          _buildCameraPreview(),
-          ScannerOverlay(
-            guideWidth: guide.width,
-            guideHeight: guide.height,
-            hint: _mode.hint,
-          ),
-          if (_mode == ScanMode.shelfLabel && _isReady)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 88,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ZoomButton(
-                          label: '1.0x',
-                          selected: (_zoomLevel - 1.0).abs() < 0.1,
-                          onPressed: () => _setZoom(1.0),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ZoomButton(
-                          label: '2.0x',
-                          selected: (_zoomLevel - 2.0).abs() < 0.1,
-                          onPressed: () => _setZoom(2.0),
-                        ),
-                      ),
-                    ],
+  Widget _buildTopBar(ColorScheme colorScheme) {
+    return Material(
+      color: _isScanning ? Colors.black : colorScheme.surface,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 16, 8),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: _isProcessing ? null : _handleBack,
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: _isScanning ? Colors.white : colorScheme.onSurface,
+                ),
+              ),
+              Expanded(
+                child: SegmentedButton<ScanMode>(
+                  style: SegmentedButton.styleFrom(
+                    backgroundColor: _isScanning
+                        ? colorScheme.primary
+                        : colorScheme.primaryContainer,
+                    foregroundColor:
+                        _isScanning ? Colors.white : colorScheme.onPrimaryContainer,
+                    selectedBackgroundColor: Colors.white,
+                    selectedForegroundColor: colorScheme.primary,
+                    side: BorderSide(
+                      color: _isScanning
+                          ? Colors.white.withValues(alpha: 0.4)
+                          : colorScheme.outline.withValues(alpha: 0.3),
+                    ),
                   ),
+                  segments: ScanMode.values
+                      .map(
+                        (mode) => ButtonSegment(
+                          value: mode,
+                          label: Text(mode.label),
+                          icon: Icon(
+                            mode == ScanMode.barcode
+                                ? Icons.qr_code_scanner
+                                : Icons.receipt_long,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  selected: {_mode},
+                  onSelectionChanged: _isProcessing
+                      ? null
+                      : (selection) => _switchMode(selection.first),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScanLayout(ColorScheme colorScheme) {
+    final guide = _mode.guideSize;
+
+    return Column(
+      children: [
+        Expanded(
+          flex: 1,
+          child: Listener(
+            onPointerDown: (_) => _resetInactivityTimer(),
+            child: ColoredBox(
+              color: Colors.black,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildCameraPreview(),
+                  if (_isReady)
+                    ScannerOverlay(
+                      guideWidth: guide.width,
+                      guideHeight: guide.height,
+                      cornerBracketsOnly: true,
+                    ),
+                  if (_isReady)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: IconButton(
+                        onPressed: _isProcessing ? null : _toggleTorch,
+                        icon: Icon(
+                          _torchEnabled ? Icons.flash_on : Icons.flash_off,
+                          color: Colors.white,
+                        ),
+                        tooltip: 'Lanterna',
+                      ),
+                    ),
+                  if (_mode == ScanMode.shelfLabel && _isReady)
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: 16,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _ZoomButton(
+                                  label: '1.0x',
+                                  selected: (_zoomLevel - 1.0).abs() < 0.1,
+                                  onPressed: () => _setZoom(1.0),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _ZoomButton(
+                                  label: '2.0x',
+                                  selected: (_zoomLevel - 2.0).abs() < 0.1,
+                                  onPressed: () => _setZoom(2.0),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 40,
+                            child: FilledButton(
+                              onPressed:
+                                  _isProcessing ? null : _captureAndScanLabel,
+                              child: const Icon(Icons.camera_alt),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 1,
+          child: ColoredBox(
+            color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        _mode == ScanMode.barcode
+                            ? 'Leia um código de barras para identificar o produto'
+                            : 'Enquadre a etiqueta de preço para ler nome e valor',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              height: 1.35,
+                            ),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 40,
-                    child: FilledButton(
-                      onPressed: _isProcessing ? null : _captureAndScanLabel,
-                      child: const Icon(Icons.camera_alt),
+                  InkWell(
+                    onTap: _isProcessing ? null : _openManualProduct,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.add,
+                              size: 18,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Novo produto',
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 24,
-            child: SegmentedButton<ScanMode>(
-              style: SegmentedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: Colors.white,
-                selectedBackgroundColor: Colors.white,
-                selectedForegroundColor: colorScheme.primary,
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
-              ),
-              segments: ScanMode.values
-                  .map(
-                    (mode) => ButtonSegment(
-                      value: mode,
-                      label: Text(mode.label),
-                      icon: Icon(
-                        mode == ScanMode.barcode
-                            ? Icons.qr_code_scanner
-                            : Icons.receipt_long,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProductPreview(ColorScheme colorScheme) {
+    final product = _pendingProduct!;
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (product.imageUrl != null)
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        product.imageUrl!,
+                        height: 240,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _ProductImagePlaceholder(colorScheme: colorScheme),
                       ),
                     ),
                   )
-                  .toList(),
-              selected: {_mode},
-              onSelectionChanged: _isProcessing
-                  ? null
-                  : (selection) => _switchMode(selection.first),
+                else
+                  _ProductImagePlaceholder(colorScheme: colorScheme),
+                if (product.brand != null && product.brand!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Marca: ${product.brand}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+                if (product.barcode != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Código: ${product.barcode}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                _LabeledInput(
+                  label: 'Nome',
+                  child: TextField(
+                    controller: _nameController,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _LabeledInput(
+                  label: 'Quantidade',
+                  child: TextField(
+                    controller: _quantityController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _LabeledInput(
+                  label: 'Preço',
+                  child: TextField(
+                    controller: _priceController,
+                    decoration: const InputDecoration(
+                      prefixText: 'R\$ ',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [CurrencyInputFormatter()],
+                  ),
+                ),
+              ],
             ),
           ),
-          if (_isProcessing)
-            Container(
-              color: Colors.black54,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(color: Colors.white),
-                    const SizedBox(height: 16),
-                    Text(
-                      _mode == ScanMode.barcode
-                          ? 'Buscando produto...'
-                          : 'Lendo etiqueta...',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ],
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: FilledButton(
+              onPressed: _confirmPendingProduct,
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
                 ),
               ),
+              child: const Icon(Icons.arrow_forward, size: 28),
             ),
-        ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return PopScope(
+      canPop: _pendingProduct == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _pendingProduct != null) {
+          _clearPendingProduct();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: _isScanning ? Colors.black : colorScheme.surface,
+        body: Column(
+          children: [
+            _buildTopBar(colorScheme),
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _isScanning
+                      ? _buildScanLayout(colorScheme)
+                      : _buildProductPreview(colorScheme),
+                  if (_isProcessing && _isScanning)
+                    Container(
+                      color: Colors.black54,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(color: Colors.white),
+                            const SizedBox(height: 16),
+                            Text(
+                              _mode == ScanMode.barcode
+                                  ? 'Buscando produto...'
+                                  : 'Lendo etiqueta...',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LabeledInput extends StatelessWidget {
+  const _LabeledInput({
+    required this.label,
+    required this.child,
+  });
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontSize:
+                    (Theme.of(context).textTheme.titleMedium?.fontSize ?? 16) -
+                        1,
+              ),
+        ),
+        const SizedBox(height: 4),
+        child,
+      ],
+    );
+  }
+}
+
+class _ProductImagePlaceholder extends StatelessWidget {
+  const _ProductImagePlaceholder({required this.colorScheme});
+
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 200,
+        height: 200,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          Icons.shopping_bag_outlined,
+          size: 72,
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -656,10 +976,7 @@ class _BatterySaverCountdownDialogState
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Text(
-                  '$_secondsRemaining',
-                  style: countdownStyle,
-                ),
+                Text('$_secondsRemaining', style: countdownStyle),
                 Text(
                   ' ${_secondsRemaining == 1 ? 'segundo' : 'segundos'}',
                   style: countdownStyle,
