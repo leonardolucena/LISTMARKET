@@ -7,6 +7,7 @@ import '../services/shopping_list_repository.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/item_form_dialog.dart';
 import 'barcode_scanner_screen.dart';
+import 'shelf_label_scanner_screen.dart';
 
 class ListDetailScreen extends StatefulWidget {
   const ListDetailScreen({super.key, required this.listId});
@@ -32,6 +33,15 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     setState(() {
       _list = _repository.getListById(widget.listId);
     });
+  }
+
+  Future<void> _scanShelfLabel() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ShelfLabelScannerScreen(listId: widget.listId),
+      ),
+    );
+    _loadList();
   }
 
   Future<void> _scanBarcode() async {
@@ -103,6 +113,11 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
         title: Text(list.name),
         actions: [
           IconButton(
+            onPressed: _scanShelfLabel,
+            icon: const Icon(Icons.receipt_long),
+            tooltip: 'Ler etiqueta da gôndola',
+          ),
+          IconButton(
             onPressed: _scanBarcode,
             icon: const Icon(Icons.qr_code_scanner),
             tooltip: 'Escanear código de barras',
@@ -110,7 +125,11 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
         ],
       ),
       body: list.items.isEmpty
-          ? _EmptyItemsState(onAddItem: _addItem, onScanBarcode: _scanBarcode)
+          ? _EmptyItemsState(
+              onAddItem: _addItem,
+              onScanBarcode: _scanBarcode,
+              onScanShelfLabel: _scanShelfLabel,
+            )
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: list.items.length,
@@ -130,17 +149,24 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           FloatingActionButton.extended(
+            heroTag: 'shelf',
+            onPressed: _scanShelfLabel,
+            icon: const Icon(Icons.receipt_long),
+            label: const Text('Etiqueta'),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
             heroTag: 'scan',
             onPressed: _scanBarcode,
             icon: const Icon(Icons.qr_code_scanner),
-            label: const Text('Escanear'),
+            label: const Text('Código'),
           ),
           const SizedBox(height: 12),
           FloatingActionButton.extended(
             heroTag: 'add',
             onPressed: _addItem,
             icon: const Icon(Icons.add),
-            label: const Text('Adicionar item'),
+            label: const Text('Manual'),
           ),
         ],
       ),
@@ -152,10 +178,12 @@ class _EmptyItemsState extends StatelessWidget {
   const _EmptyItemsState({
     required this.onAddItem,
     required this.onScanBarcode,
+    required this.onScanShelfLabel,
   });
 
   final VoidCallback onAddItem;
   final VoidCallback onScanBarcode;
+  final VoidCallback onScanShelfLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -177,13 +205,19 @@ class _EmptyItemsState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Adicione itens manualmente ou escaneie o código de barras.',
+              'Adicione itens manualmente, escaneie o código de barras ou leia a etiqueta da gôndola.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
             const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: onScanShelfLabel,
+              icon: const Icon(Icons.receipt_long),
+              label: const Text('Ler etiqueta'),
+            ),
+            const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: onScanBarcode,
               icon: const Icon(Icons.qr_code_scanner),

@@ -19,12 +19,15 @@ Future<ItemFormResult?> showItemFormDialog(
   BuildContext context, {
   ListItem? item,
   String initialName = '',
+  String initialPrice = '',
   String? dialogTitle,
   String? helperText,
 }) {
   final nameController = TextEditingController(text: item?.name ?? initialName);
   final priceController = TextEditingController(
-    text: item?.price != null ? item!.price!.toStringAsFixed(2) : '',
+    text: item?.price != null
+        ? item!.price!.toStringAsFixed(2)
+        : initialPrice,
   );
   final quantityController = TextEditingController(
     text: (item?.quantity ?? 1).toString(),
