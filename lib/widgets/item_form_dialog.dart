@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/list_item.dart';
+import '../utils/currency_input_formatter.dart';
 
 class ItemFormResult {
   const ItemFormResult({
@@ -22,12 +23,11 @@ Future<ItemFormResult?> showItemFormDialog(
   String initialPrice = '',
   String? dialogTitle,
   String? helperText,
+  String? imageUrl,
 }) {
   final nameController = TextEditingController(text: item?.name ?? initialName);
   final priceController = TextEditingController(
-    text: item?.price != null
-        ? item!.price!.toStringAsFixed(2)
-        : initialPrice,
+    text: _initialPriceText(item, initialPrice),
   );
   final quantityController = TextEditingController(
     text: (item?.quantity ?? 1).toString(),
@@ -36,13 +36,41 @@ Future<ItemFormResult?> showItemFormDialog(
   return showDialog<ItemFormResult>(
     context: context,
     builder: (context) {
+      final dialogWidth = MediaQuery.sizeOf(context).width - 32;
+
       return AlertDialog(
-        title: Text(dialogTitle ?? (item == null ? 'Adicionar item' : 'Editar item')),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        constraints: BoxConstraints(
+          minWidth: dialogWidth,
+          maxWidth: dialogWidth,
+        ),
+        title: Text(
+          dialogTitle ?? (item == null ? 'Adicionar item' : 'Editar item'),
+          textAlign: TextAlign.center,
+        ),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (imageUrl != null) ...[
+                Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      imageUrl,
+                      height: 120,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               if (helperText != null) ...[
                 Text(
                   helperText,
@@ -66,13 +94,11 @@ Future<ItemFormResult?> showItemFormDialog(
                 controller: priceController,
                 decoration: const InputDecoration(
                   labelText: 'Preço (opcional)',
-                  hintText: 'Ex.: 12,99',
+                  hintText: '0,00',
                   prefixText: 'R\$ ',
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d,\.]')),
-                ],
+                keyboardType: TextInputType.number,
+                inputFormatters: [CurrencyInputFormatter()],
               ),
               const SizedBox(height: 12),
               TextField(
@@ -96,8 +122,9 @@ Future<ItemFormResult?> showItemFormDialog(
               final name = nameController.text.trim();
               if (name.isEmpty) return;
 
-              final priceText = priceController.text.trim().replaceAll(',', '.');
-              final price = priceText.isEmpty ? null : double.tryParse(priceText);
+              final price = CurrencyInputFormatter.parseFormattedPrice(
+                priceController.text,
+              );
               final quantity = int.tryParse(quantityController.text.trim()) ?? 1;
 
               Navigator.of(context).pop(
@@ -114,4 +141,17 @@ Future<ItemFormResult?> showItemFormDialog(
       );
     },
   );
+}
+
+String _initialPriceText(ListItem? item, String initialPrice) {
+  if (item?.price != null) {
+    return CurrencyInputFormatter.formatDouble(item!.price!);
+  }
+
+  if (initialPrice.isEmpty) return '';
+
+  final parsed = double.tryParse(initialPrice.replaceAll(',', '.'));
+  if (parsed == null) return '';
+
+  return CurrencyInputFormatter.formatDouble(parsed);
 }

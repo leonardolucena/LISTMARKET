@@ -19,6 +19,11 @@ class ShoppingList {
 
   int get purchasedCount => items.where((item) => item.isPurchased).length;
 
+  double get totalValue => items.fold(0.0, (sum, item) {
+    if (item.price == null) return sum;
+    return sum + item.price! * item.quantity;
+  });
+
   ShoppingList copyWith({
     String? id,
     String? name,

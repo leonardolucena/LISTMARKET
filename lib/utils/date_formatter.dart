@@ -6,5 +6,5 @@ String formatDate(DateTime date) {
 }
 
 String formatPrice(double price) {
-  return 'R\$ ${price.toStringAsFixed(2).replaceAll('.', ',')}';
+  return price.toStringAsFixed(2).replaceAll('.', ',');
 }

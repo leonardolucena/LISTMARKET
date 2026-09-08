@@ -28,5 +28,17 @@ void main() {
     expect(restored.items.first.name, 'Arroz');
     expect(restored.pendingCount, 1);
     expect(restored.purchasedCount, 0);
+    expect(restored.totalValue, 25.98);
+  });
+
+  test('titleText limita o nome a 3 palavras com reticencias', () {
+    final item = ListItem(
+      id: 'a',
+      name:
+          'Biscoito cream cracker amanteigado tradicional Vitalella pacote 400g',
+      brand: 'Vitalella',
+    );
+
+    expect(item.titleText, 'Biscoito cream cracker...');
   });
 }

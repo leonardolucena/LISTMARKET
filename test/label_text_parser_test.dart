@@ -41,5 +41,40 @@ Leite Integral
       expect(result.name, 'Leite Integral');
       expect(result.price, 3.99);
     });
+    test('prioriza preço com símbolo de real', () {
+      const text = '''
+Biscoito cream cracker
+OFERTA 3,99
+R\$ 5,49
+''';
+
+      final result = LabelTextParser.parse(text);
+
+      expect(result.price, 5.49);
+    });
+
+    test('corrige leitura comum de OCR no preço', () {
+      const text = '''
+ARROZ 5KG
+R\$  l2,99
+''';
+
+      final result = LabelTextParser.parse(text);
+
+      expect(result.price, 12.99);
+    });
+
+    test('junta R\$ e preço em linhas separadas', () {
+      const text = '''
+Leite Integral 1L
+R\$
+4,29
+''';
+
+      final result = LabelTextParser.parse(text);
+
+      expect(result.name, 'Leite Integral 1L');
+      expect(result.price, 4.29);
+    });
   });
 }

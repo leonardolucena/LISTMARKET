@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/list_item.dart';
+import '../models/scan_mode.dart';
 import '../models/shopping_list.dart';
 import '../services/shopping_list_repository.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/item_form_dialog.dart';
-import 'barcode_scanner_screen.dart';
-import 'shelf_label_scanner_screen.dart';
+import 'scanner_screen.dart';
 
 class ListDetailScreen extends StatefulWidget {
   const ListDetailScreen({super.key, required this.listId});
@@ -35,19 +35,13 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     });
   }
 
-  Future<void> _scanShelfLabel() async {
+  Future<void> _openScanner({ScanMode initialMode = ScanMode.barcode}) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ShelfLabelScannerScreen(listId: widget.listId),
-      ),
-    );
-    _loadList();
-  }
-
-  Future<void> _scanBarcode() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => BarcodeScannerScreen(listId: widget.listId),
+        builder: (context) => ScannerScreen(
+          listId: widget.listId,
+          initialMode: initialMode,
+        ),
       ),
     );
     _loadList();
@@ -93,6 +87,30 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
   }
 
   Future<void> _deleteItem(ListItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Excluir item'),
+          content: Text(
+            'Deseja excluir "${item.titleText}" da lista?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
     await _repository.deleteItem(widget.listId, item.id);
     _loadList();
   }
@@ -113,62 +131,92 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
         title: Text(list.name),
         actions: [
           IconButton(
-            onPressed: _scanShelfLabel,
-            icon: const Icon(Icons.receipt_long),
-            tooltip: 'Ler etiqueta da gôndola',
+            onPressed: _addItem,
+            icon: const Icon(Icons.add),
+            tooltip: 'Adicionar item',
           ),
           IconButton(
-            onPressed: _scanBarcode,
+            onPressed: () => _openScanner(),
             icon: const Icon(Icons.qr_code_scanner),
-            tooltip: 'Escanear código de barras',
+            tooltip: 'Escanear produto',
           ),
         ],
       ),
-      body: list.items.isEmpty
-          ? _EmptyItemsState(
-              onAddItem: _addItem,
-              onScanBarcode: _scanBarcode,
-              onScanShelfLabel: _scanShelfLabel,
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.items.length,
-              separatorBuilder: (context, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final item = list.items[index];
-                return _ItemTile(
-                  item: item,
-                  onToggle: () => _togglePurchased(item),
-                  onEdit: () => _editItem(item),
-                  onDelete: () => _deleteItem(item),
-                );
-              },
-            ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      body: Column(
         children: [
-          FloatingActionButton.extended(
-            heroTag: 'shelf',
-            onPressed: _scanShelfLabel,
-            icon: const Icon(Icons.receipt_long),
-            label: const Text('Etiqueta'),
+          Expanded(
+            child: list.items.isEmpty
+                ? _EmptyItemsState(
+                    onAddItem: _addItem,
+                    onScan: () => _openScanner(),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: list.items.length,
+                    separatorBuilder: (context, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final item = list.items[index];
+                      return _ItemTile(
+                        item: item,
+                        onToggle: () => _togglePurchased(item),
+                        onEdit: () => _editItem(item),
+                        onDelete: () => _deleteItem(item),
+                      );
+                    },
+                  ),
           ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'scan',
-            onPressed: _scanBarcode,
-            icon: const Icon(Icons.qr_code_scanner),
-            label: const Text('Código'),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'add',
-            onPressed: _addItem,
-            icon: const Icon(Icons.add),
-            label: const Text('Manual'),
-          ),
+          if (list.items.isNotEmpty)
+            _TotalFooter(total: list.totalValue),
         ],
+      ),
+    );
+  }
+}
+
+class _TotalFooter extends StatelessWidget {
+  const _TotalFooter({required this.total});
+
+  final double total;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withValues(alpha: 0.25),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Valor total',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+              ),
+              Text(
+                'R\$ ${formatPrice(total)}',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -177,13 +225,11 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
 class _EmptyItemsState extends StatelessWidget {
   const _EmptyItemsState({
     required this.onAddItem,
-    required this.onScanBarcode,
-    required this.onScanShelfLabel,
+    required this.onScan,
   });
 
   final VoidCallback onAddItem;
-  final VoidCallback onScanBarcode;
-  final VoidCallback onScanShelfLabel;
+  final VoidCallback onScan;
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +251,7 @@ class _EmptyItemsState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Adicione itens manualmente, escaneie o código de barras ou leia a etiqueta da gôndola.',
+              'Escaneie códigos de barras ou etiquetas de preço, ou adicione itens manualmente.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -213,15 +259,9 @@ class _EmptyItemsState extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: onScanShelfLabel,
-              icon: const Icon(Icons.receipt_long),
-              label: const Text('Ler etiqueta'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: onScanBarcode,
+              onPressed: onScan,
               icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Escanear código'),
+              label: const Text('Escanear produto'),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -244,6 +284,14 @@ class _ItemTile extends StatelessWidget {
     required this.onDelete,
   });
 
+  static const _imageSize = 80.0;
+  static const _actionWidth = 36.0;
+  static const _lineHeight = 18.0;
+  static const _topTextBehavior = TextHeightBehavior(
+    applyHeightToFirstAscent: false,
+    applyHeightToLastDescent: false,
+  );
+
   final ListItem item;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
@@ -251,63 +299,201 @@ class _ItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subtitleParts = <String>[];
+    final detailParts = <String>[];
     if (item.quantity > 1) {
-      subtitleParts.add('Qtd: ${item.quantity}');
+      detailParts.add('Quantidade: ${item.quantity}');
     }
     if (item.price != null) {
-      subtitleParts.add(formatPrice(item.price!));
+      detailParts.add('Preço: ${formatPrice(item.price!)}');
     }
 
+    final purchasedStyle = item.isPurchased
+        ? TextStyle(
+            decoration: TextDecoration.lineThrough,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          )
+        : null;
+
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
-      child: ListTile(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Checkbox(
-              value: item.isPurchased,
-              onChanged: (_) => onToggle(),
-            ),
-            if (item.imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  item.imageUrl!,
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const SizedBox(width: 40, height: 40),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: _imageSize,
+                height: _imageSize,
+                child: item.imageUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          item.imageUrl!,
+                          width: _imageSize,
+                          height: _imageSize,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _ImagePlaceholder(colorScheme: colorScheme),
+                        ),
+                      )
+                    : _ImagePlaceholder(colorScheme: colorScheme),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SizedBox(
+                  height: _imageSize,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.titleText,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textHeightBehavior: _topTextBehavior,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              height: 1.15,
+                            ).merge(purchasedStyle),
+                      ),
+                      SizedBox(
+                        height: _lineHeight,
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: item.brandText != null
+                              ? Text(
+                                  '(${item.brandText})',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textHeightBehavior: _topTextBehavior,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        height: 1.1,
+                                        color: colorScheme.onSurfaceVariant,
+                                      )
+                                      .merge(purchasedStyle),
+                                )
+                              : null,
+                        ),
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        height: _lineHeight,
+                        child: Align(
+                          alignment: Alignment.bottomLeft,
+                          child: detailParts.isNotEmpty
+                              ? Text(
+                                  detailParts.join(' | '),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      )
+                                      .merge(purchasedStyle),
+                                )
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-          ],
+              SizedBox(
+                height: _imageSize,
+                width: _actionWidth + 4,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _ActionButton(
+                      colorScheme: colorScheme,
+                      icon: Icons.edit_outlined,
+                      tooltip: 'Editar',
+                      backgroundColor: colorScheme.primary.withValues(alpha: 0.12),
+                      iconColor: colorScheme.primary.withValues(alpha: 0.85),
+                      onPressed: onEdit,
+                    ),
+                    const SizedBox(height: 6),
+                    _ActionButton(
+                      colorScheme: colorScheme,
+                      icon: Icons.delete_outline,
+                      tooltip: 'Excluir',
+                      backgroundColor: colorScheme.error.withValues(alpha: 0.12),
+                      iconColor: colorScheme.error.withValues(alpha: 0.75),
+                      onPressed: onDelete,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        title: Text(
-          item.name,
-          style: item.isPurchased
-              ? TextStyle(
-                  decoration: TextDecoration.lineThrough,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                )
-              : null,
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.colorScheme,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    required this.backgroundColor,
+    this.iconColor,
+  });
+
+  final ColorScheme colorScheme;
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  final Color backgroundColor;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: SizedBox(
+        width: _ItemTile._actionWidth + 4,
+        height: 37,
+        child: IconButton(
+          onPressed: onPressed,
+          icon: Icon(icon, size: 20, color: iconColor),
+          tooltip: tooltip,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
         ),
-        subtitle: subtitleParts.isEmpty
-            ? null
-            : Text(subtitleParts.join(' · ')),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'edit':
-                onEdit();
-              case 'delete':
-                onDelete();
-            }
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 'edit', child: Text('Editar')),
-            PopupMenuItem(value: 'delete', child: Text('Excluir')),
-          ],
-        ),
+      ),
+    );
+  }
+}
+
+class _ImagePlaceholder extends StatelessWidget {
+  const _ImagePlaceholder({required this.colorScheme});
+
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        Icons.shopping_bag_outlined,
+        color: colorScheme.onSurfaceVariant,
       ),
     );
   }
