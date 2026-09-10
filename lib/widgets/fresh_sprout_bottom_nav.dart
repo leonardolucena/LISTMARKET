@@ -64,18 +64,11 @@ class FreshSproutBottomNav extends StatelessWidget {
                   final selected = currentIndex == index;
                   final icon = selected ? item.$2 : item.$1;
 
-                  if (selected && isDarkMode) {
-                    return _DarkActiveNavItem(
+                  if (selected) {
+                    return _ActiveNavItem(
                       icon: icon,
                       label: item.$3,
-                      onTap: () => onChanged(index),
-                    );
-                  }
-
-                  if (selected && !isDarkMode) {
-                    return _LightActiveNavItem(
-                      icon: icon,
-                      label: item.$3,
+                      isDarkMode: isDarkMode,
                       onTap: () => onChanged(index),
                     );
                   }
@@ -96,111 +89,80 @@ class FreshSproutBottomNav extends StatelessWidget {
   }
 }
 
-class _LightActiveNavItem extends StatelessWidget {
-  const _LightActiveNavItem({
+class _ActiveNavItem extends StatelessWidget {
+  const _ActiveNavItem({
     required this.icon,
     required this.label,
+    required this.isDarkMode,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final bool isDarkMode;
   final VoidCallback onTap;
+
+  static const _emeraldGradient = LinearGradient(
+    colors: [
+      Color(0xFF0D8259),
+      Color(0xFF10A370),
+    ],
+  );
+
+  static const _darkEmeraldGradient = LinearGradient(
+    colors: [
+      Color(0xFF059669),
+      Color(0xFF10B981),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: FreshSproutColors.secondaryContainer,
+    return ClipRRect(
       borderRadius: FreshSproutRadius.fullBorder,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: FreshSproutRadius.fullBorder,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: FreshSproutSpacing.md,
-            vertical: FreshSproutSpacing.xxs,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 22,
-                color: FreshSproutColors.onSecondaryContainer,
-              ),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: FreshSproutColors.onSecondaryContainer,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DarkActiveNavItem extends StatelessWidget {
-  const _DarkActiveNavItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      borderRadius: FreshSproutRadius.fullBorder,
-      elevation: 0,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: FreshSproutRadius.fullBorder,
+      child: Material(
+        color: Colors.transparent,
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: FreshSproutRadius.fullBorder,
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF059669),
-                Color(0xFF10B981),
-              ],
-            ),
+            gradient: isDarkMode ? _darkEmeraldGradient : _emeraldGradient,
             boxShadow: [
               BoxShadow(
-                color: FreshSproutColors.darkAccentGreen.withValues(alpha: 0.35),
+                color: FreshSproutColors.brandEmerald.withValues(
+                  alpha: isDarkMode ? 0.35 : 0.25,
+                ),
                 blurRadius: 12,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: FreshSproutSpacing.md,
-              vertical: FreshSproutSpacing.xxs,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: Colors.white,
-                ),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                ),
-              ],
+          child: InkWell(
+            onTap: onTap,
+            splashColor: Colors.white24,
+            highlightColor: Colors.white12,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: FreshSproutSpacing.md,
+                vertical: FreshSproutSpacing.xxs,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 22,
+                    color: Colors.white,
+                  ),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

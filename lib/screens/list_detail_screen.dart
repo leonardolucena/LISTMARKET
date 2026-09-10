@@ -251,14 +251,18 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
   }
 
   Future<void> _openScanner({ScanMode initialMode = ScanMode.barcode}) async {
-    await Navigator.of(context).push(
+    final added = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) => ScannerScreen(
           listId: widget.listId,
           initialMode: initialMode,
+          isDarkMode: widget.isDarkMode,
         ),
       ),
     );
+    if (added == true) {
+      setState(() => _filter = _ListItemFilter.pending);
+    }
     _loadList();
   }
 
@@ -274,6 +278,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     );
 
     await _repository.addItem(widget.listId, item);
+    setState(() => _filter = _ListItemFilter.pending);
     _loadList();
   }
 

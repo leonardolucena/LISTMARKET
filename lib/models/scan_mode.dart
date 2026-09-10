@@ -25,7 +25,7 @@ extension ScanModeLabels on ScanMode {
   ({double width, double height}) get guideSize {
     switch (this) {
       case ScanMode.barcode:
-        return (width: 280, height: 140);
+        return (width: 256, height: 128);
       case ScanMode.shelfLabel:
         return (width: 300, height: 180);
     }
