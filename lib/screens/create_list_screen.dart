@@ -17,9 +17,9 @@ class _CreateListScreenState extends State<CreateListScreen> {
 
   static const _examples = [
     'Lista de compras',
-    'Compras da semana',
-    'Compra do mês',
-    'Compras quinzenais etc.',
+    'Compra semanal',
+    'Compra mensal',
+    'Compra quinzenal',
   ];
 
   @override
@@ -36,6 +36,12 @@ class _CreateListScreenState extends State<CreateListScreen> {
   }
 
   bool get _canSubmit => _controller.text.trim().isNotEmpty && !_isSaving;
+
+  void _selectExample(String example) {
+    _controller.text = example;
+    _controller.selection = TextSelection.collapsed(offset: example.length);
+    _focusNode.requestFocus();
+  }
 
   Future<void> _submit() async {
     if (!_canSubmit) return;
@@ -131,31 +137,19 @@ class _CreateListScreenState extends State<CreateListScreen> {
                       fontWeight: FontWeight.w500,
                     ),
               ),
-              const SizedBox(height: 8),
-              ..._examples.map(
-                (example) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '• ',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          example,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _examples.map((example) {
+                  final isSelected = _controller.text.trim() == example;
+
+                  return FilterChip(
+                    label: Text(example),
+                    selected: isSelected,
+                    onSelected: (_) => _selectExample(example),
+                  );
+                }).toList(),
               ),
             ],
           ),
