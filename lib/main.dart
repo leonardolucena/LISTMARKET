@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/main_shell.dart';
 import 'services/shopping_list_repository.dart';
 import 'theme/app_theme.dart';
 
@@ -35,7 +35,7 @@ class _ListMarketAppState extends State<ListMarketApp> {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: _themeMode,
-      home: HomeScreen(
+      home: MainShell(
         isDarkMode: _themeMode == ThemeMode.dark,
         onToggleTheme: _toggleTheme,
       ),
