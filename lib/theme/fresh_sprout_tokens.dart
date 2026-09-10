@@ -75,21 +75,26 @@ class FreshSproutColors {
   static const progressTrack = Color(0xFFEBF2ED);
   static const shadowTint = Color(0xFF0D3B28);
 
-  // Dark theme (Fresh Sprout HTML)
+  // Dark theme (Fresh Sprout profile v2)
   static const darkBackground = Color(0xFF191D2D);
-  static const darkCard = Color(0xFF34394B);
-  static const darkBorder = Color(0xFF454D63);
+  static const darkSurface = Color(0xFF23283A);
+  static const darkSurfaceElevated = Color(0xFF2A3045);
+  static const darkCard = darkSurface;
+  static const darkBorder = Color(0xFF34394B);
+  static const darkBorderLight = Color(0xFF42485E);
   static const darkAccent = Color(0xFFF1A410);
   static const darkAccentHover = Color(0xFFDF9407);
+  static const darkAccentGreen = Color(0xFF10B981);
+  static const darkAccentGreenLight = Color(0xFF34D399);
+  static const darkAccentGreenDark = Color(0xFF059669);
   static const darkTextPrimary = Color(0xFFFFFFFF);
-  static const darkTextMuted = Color(0xFF9AA2B5);
+  static const darkTextMuted = Color(0xFF94A3B8);
   static const darkTextSecondary = Color(0xFFCBD5E1);
-  static const darkSurfaceHover = Color(0xFF3E4459);
-  static const darkProgressTrack = Color(0xFF191D2D);
+  static const darkSurfaceHover = Color(0xFF34394B);
+  static const darkProgressTrack = Color(0xFF2A3045);
 
   // Aliases
-  static const darkSurface = darkCard;
-  static const darkSurfaceHigh = darkCard;
+  static const darkSurfaceHigh = darkSurfaceElevated;
   static const darkSurfaceHighest = darkBorder;
   static const darkOnSurface = darkTextPrimary;
   static const darkOnSurfaceVariant = darkTextMuted;
@@ -287,6 +292,9 @@ class FreshSproutDecorations {
           Color(0xFF0B6E4B),
           Color(0xFF064E35),
         ],
+      ),
+      border: Border.all(
+        color: FreshSproutColors.outlineVariant.withValues(alpha: 0.5),
       ),
       boxShadow: FreshSproutElevation.ambientEmerald,
     );

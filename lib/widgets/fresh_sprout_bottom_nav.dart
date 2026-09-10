@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import '../theme/fresh_sprout_tokens.dart';
@@ -23,57 +25,70 @@ class FreshSproutBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? FreshSproutColors.darkBackground
-            : FreshSproutColors.surfaceContainerLowest,
-        border: isDarkMode
-            ? Border(
-                top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-              )
-            : null,
-        boxShadow: isDarkMode
-            ? FreshSproutElevation.bottomNavDark
-            : FreshSproutElevation.bottomNav,
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: FreshSproutSpacing.marginMobile,
-            vertical: FreshSproutSpacing.xs,
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? FreshSproutColors.darkBackground.withValues(alpha: 0.95)
+                : FreshSproutColors.surfaceContainerLowest,
+            border: Border(
+              top: BorderSide(
+                color: isDarkMode
+                    ? FreshSproutColors.darkBorder.withValues(alpha: 0.8)
+                    : FreshSproutColors.outlineVariant.withValues(alpha: 0.5),
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDarkMode
+                    ? Colors.black.withValues(alpha: 0.4)
+                    : FreshSproutColors.shadowTint.withValues(alpha: 0.04),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(_items.length, (index) {
-              final item = _items[index];
-              final selected = currentIndex == index;
-              final icon = selected ? item.$2 : item.$1;
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: FreshSproutSpacing.marginMobile,
+                vertical: FreshSproutSpacing.xs,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(_items.length, (index) {
+                  final item = _items[index];
+                  final selected = currentIndex == index;
+                  final icon = selected ? item.$2 : item.$1;
 
-              if (selected && isDarkMode) {
-                return _DarkActiveNavItem(
-                  icon: icon,
-                  label: item.$3,
-                  onTap: () => onChanged(index),
-                );
-              }
+                  if (selected && isDarkMode) {
+                    return _DarkActiveNavItem(
+                      icon: icon,
+                      label: item.$3,
+                      onTap: () => onChanged(index),
+                    );
+                  }
 
-              if (selected && !isDarkMode) {
-                return _LightActiveNavItem(
-                  icon: icon,
-                  label: item.$3,
-                  onTap: () => onChanged(index),
-                );
-              }
+                  if (selected && !isDarkMode) {
+                    return _LightActiveNavItem(
+                      icon: icon,
+                      label: item.$3,
+                      onTap: () => onChanged(index),
+                    );
+                  }
 
-              return _NavItem(
-                icon: icon,
-                label: item.$3,
-                isDarkMode: isDarkMode,
-                onTap: () => onChanged(index),
-              );
-            }),
+                  return _NavItem(
+                    icon: icon,
+                    label: item.$3,
+                    isDarkMode: isDarkMode,
+                    onTap: () => onChanged(index),
+                  );
+                }),
+              ),
+            ),
           ),
         ),
       ),
@@ -110,7 +125,7 @@ class _LightActiveNavItem extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                size: 24,
+                size: 22,
                 color: FreshSproutColors.onSecondaryContainer,
               ),
               Text(
@@ -118,6 +133,7 @@ class _LightActiveNavItem extends StatelessWidget {
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: FreshSproutColors.onSecondaryContainer,
                       fontWeight: FontWeight.w700,
+                      fontSize: 11,
                     ),
               ),
             ],
@@ -142,32 +158,50 @@ class _DarkActiveNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: FreshSproutColors.primaryContainer,
       borderRadius: FreshSproutRadius.fullBorder,
+      elevation: 0,
       child: InkWell(
         onTap: onTap,
         borderRadius: FreshSproutRadius.fullBorder,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: FreshSproutSpacing.md,
-            vertical: FreshSproutSpacing.xxs,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 24,
-                color: FreshSproutColors.onPrimaryContainer,
-              ),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: FreshSproutColors.onPrimaryContainer,
-                      fontWeight: FontWeight.w700,
-                    ),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: FreshSproutRadius.fullBorder,
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF059669),
+                Color(0xFF10B981),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: FreshSproutColors.darkAccentGreen.withValues(alpha: 0.35),
+                blurRadius: 12,
               ),
             ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: FreshSproutSpacing.md,
+              vertical: FreshSproutSpacing.xxs,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: Colors.white,
+                ),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -191,7 +225,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final inactive = isDarkMode
-        ? FreshSproutColors.darkTextMuted
+        ? const Color(0xFF94A3B8)
         : FreshSproutColors.onSurfaceVariant;
 
     return InkWell(

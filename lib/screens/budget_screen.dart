@@ -721,7 +721,7 @@ class _MonthSelectorBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: FreshSproutColors.primaryContainer,
         borderRadius: FreshSproutRadius.fullBorder,
-        boxShadow: isDarkMode ? null : FreshSproutElevation.level1,
+        boxShadow: null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -754,7 +754,7 @@ class _MonthSelectorBar extends StatelessWidget {
         border: Border.all(
           color: FreshSproutColors.outlineVariant.withValues(alpha: 0.3),
         ),
-        boxShadow: isDarkMode ? null : FreshSproutElevation.level1,
+        boxShadow: null,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -925,7 +925,7 @@ class _HeroBudgetCard extends StatelessWidget {
         border: Border.all(
           color: FreshSproutColors.outlineVariant.withValues(alpha: 0.4),
         ),
-        boxShadow: isDarkMode ? null : FreshSproutElevation.level2,
+        boxShadow: null,
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -1314,7 +1314,7 @@ class _CategoryCard extends StatelessWidget {
         border: Border.all(
           color: FreshSproutColors.outlineVariant.withValues(alpha: 0.3),
         ),
-        boxShadow: isDarkMode ? null : FreshSproutElevation.level1,
+        boxShadow: null,
       ),
       child: Column(
         children: [
@@ -1466,7 +1466,7 @@ class _EconomyTipsSection extends StatelessWidget {
             border: Border.all(
               color: FreshSproutColors.outlineVariant.withValues(alpha: 0.3),
             ),
-            boxShadow: isDarkMode ? null : FreshSproutElevation.level1,
+            boxShadow: null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1541,7 +1541,7 @@ class _EconomyTipsSection extends StatelessWidget {
             border: Border.all(
               color: FreshSproutColors.outlineVariant.withValues(alpha: 0.3),
             ),
-            boxShadow: isDarkMode ? null : FreshSproutElevation.level1,
+            boxShadow: null,
           ),
           child: Row(
             children: [
@@ -1656,7 +1656,7 @@ class _RecurringStoresSection extends StatelessWidget {
             border: Border.all(
               color: FreshSproutColors.outlineVariant.withValues(alpha: 0.3),
             ),
-            boxShadow: isDarkMode ? null : FreshSproutElevation.level1,
+            boxShadow: null,
           ),
           padding: const EdgeInsets.all(_BudgetSpec.cardPaddingSm),
           child: Column(

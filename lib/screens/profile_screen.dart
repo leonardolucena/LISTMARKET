@@ -40,9 +40,10 @@ const _monthLong = [
   'Dezembro',
 ];
 
-/// Medidas do mockup HTML (Tailwind: rounded-xl=12px, rounded-lg=8px).
+/// Medidas do mockup HTML (rounded-2xl=16px, rounded-xl=12px, rounded-lg=8px).
 abstract final class _ProfileSpec {
-  static final cardRadius = FreshSproutRadius.lgBorder;
+  static final cardRadius = FreshSproutRadius.xlBorder;
+  static final innerRadius = FreshSproutRadius.lgBorder;
   static final buttonRadius = FreshSproutRadius.mdBorder;
   static const switchWidth = 44.0;
   static const switchHeight = 24.0;
@@ -51,9 +52,43 @@ abstract final class _ProfileSpec {
   static const btnVPad = 6.0;
   static const iconBtnSize = 40.0;
   static const headerIconSize = 36.0;
-  static const sectionIconSize = 32.0;
+  static const sectionIconSize = 36.0;
   static const rowIconSize = 36.0;
-  static const metricIconSize = 28.0;
+  static const metricIconSize = 32.0;
+  static const heroPadding = 20.0;
+  static const metricGap = 10.0;
+  static const listTopPadding = 12.0;
+
+  static Color cardBorder(bool isDark) => isDark
+      ? FreshSproutColors.darkBorder
+      : FreshSproutColors.outlineVariant.withValues(alpha: 0.6);
+
+  static Color subtleBorder(bool isDark) => isDark
+      ? FreshSproutColors.darkBorder.withValues(alpha: 0.8)
+      : FreshSproutColors.outlineVariant.withValues(alpha: 0.5);
+
+  static List<BoxShadow> cardShadow({required bool elevated}) => elevated
+      ? [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ]
+      : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ];
+}
+
+/// Cores e acentos do dark mode v2 (Perfil).
+abstract final class _ProfileDark {
+  static Color get green => FreshSproutColors.darkAccentGreen;
+  static Color get greenLight => FreshSproutColors.darkAccentGreenLight;
+  static Color get amber => FreshSproutColors.darkAccent;
 }
 
 class ProfileScreen extends StatefulWidget {
@@ -138,7 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 FreshSproutSpacing.marginMobile,
-                FreshSproutSpacing.xs,
+                _ProfileSpec.listTopPadding,
                 FreshSproutSpacing.marginMobile,
                 FreshSproutSpacing.lg,
               ),
@@ -196,7 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: isDark
-                              ? FreshSproutColors.darkTextMuted
+                              ? const Color(0xFF64748B)
                               : FreshSproutColors.outline,
                           letterSpacing: 0.4,
                           fontSize: 10,
@@ -220,63 +255,80 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleColor =
-        isDarkMode ? FreshSproutColors.inversePrimary : FreshSproutColors.primary;
+    final titleColor = isDarkMode
+        ? FreshSproutColors.darkTextPrimary
+        : FreshSproutColors.primary;
 
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          color: (isDarkMode
-                  ? FreshSproutColors.darkBackground
-                  : FreshSproutColors.surface)
-              .withValues(alpha: 0.92),
-          padding: const EdgeInsets.symmetric(
-            horizontal: FreshSproutSpacing.marginMobile,
-            vertical: FreshSproutSpacing.xs,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: (isDarkMode
+                    ? FreshSproutColors.darkBackground
+                    : FreshSproutColors.surface)
+                .withValues(alpha: 0.95),
+            border: Border(
+              bottom: BorderSide(
+                color: isDarkMode
+                    ? FreshSproutColors.darkBorder.withValues(alpha: 0.6)
+                    : FreshSproutColors.outlineVariant.withValues(alpha: 0.5),
+              ),
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: _ProfileSpec.headerIconSize,
-                height: _ProfileSpec.headerIconSize,
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? FreshSproutColors.darkCard
-                      : FreshSproutColors.secondaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.shopping_bag_outlined,
-                  size: 20,
-                  color: isDarkMode
-                      ? FreshSproutColors.darkAccent
-                      : FreshSproutColors.onSecondaryContainer,
-                ),
-              ),
-              const SizedBox(width: FreshSproutSpacing.xs),
-              Text(
-                'Meu Perfil',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: titleColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                      height: 24 / 18,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: FreshSproutSpacing.marginMobile,
+              vertical: FreshSproutSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? _ProfileDark.green.withValues(alpha: 0.15)
+                        : FreshSproutColors.secondaryContainer,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDarkMode
+                          ? _ProfileDark.green.withValues(alpha: 0.3)
+                          : FreshSproutColors.primary.withValues(alpha: 0.2),
                     ),
-              ),
-              const Spacer(),
-              _HeaderIconButton(
-                icon: Icons.notifications_outlined,
-                isDarkMode: isDarkMode,
-                onPressed: () {},
-              ),
-              const SizedBox(width: FreshSproutSpacing.xxs),
-              _HeaderIconButton(
-                icon: Icons.settings_outlined,
-                isDarkMode: isDarkMode,
-                onPressed: () {},
-              ),
-            ],
+                  ),
+                  child: Icon(
+                    Icons.shopping_bag_outlined,
+                    size: 20,
+                    color: isDarkMode
+                        ? _ProfileDark.greenLight
+                        : FreshSproutColors.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Meu Perfil',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: titleColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        height: 24 / 18,
+                      ),
+                ),
+                const Spacer(),
+                _HeaderIconButton(
+                  icon: Icons.notifications_outlined,
+                  isDarkMode: isDarkMode,
+                  showNotificationDot: true,
+                  onPressed: () {},
+                ),
+                _HeaderIconButton(
+                  icon: Icons.settings_outlined,
+                  isDarkMode: isDarkMode,
+                  onPressed: () {},
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -289,11 +341,13 @@ class _HeaderIconButton extends StatelessWidget {
     required this.icon,
     required this.isDarkMode,
     required this.onPressed,
+    this.showNotificationDot = false,
   });
 
   final IconData icon;
   final bool isDarkMode;
   final VoidCallback onPressed;
+  final bool showNotificationDot;
 
   @override
   Widget build(BuildContext context) {
@@ -307,12 +361,33 @@ class _HeaderIconButton extends StatelessWidget {
         child: InkWell(
           onTap: onPressed,
           customBorder: const CircleBorder(),
-          child: Icon(
-            icon,
-            size: 22,
-            color: isDarkMode
-                ? FreshSproutColors.darkTextSecondary
-                : FreshSproutColors.onSurfaceVariant,
+          hoverColor: isDarkMode
+              ? FreshSproutColors.darkSurface
+              : FreshSproutColors.surfaceContainerLow,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 22,
+                color: isDarkMode
+                    ? FreshSproutColors.darkTextSecondary
+                    : FreshSproutColors.onSurfaceVariant,
+              ),
+              if (showNotificationDot)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: FreshSproutColors.darkAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -344,6 +419,8 @@ class _ProfileHeroCard extends StatelessWidget {
 
     return _ProfileSurfaceCard(
       isDarkMode: isDarkMode,
+      elevated: true,
+      padding: const EdgeInsets.all(_ProfileSpec.heroPadding),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 480;
@@ -423,12 +500,14 @@ class _ProfileHeroCard extends StatelessWidget {
                 'Organizando compras conscientes, otimizando o orçamento de feira e controlando gastos domésticos.',
                 textAlign: isWide ? TextAlign.start : TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: onSurfaceVariant,
-                      fontSize: 12,
-                      height: 16 / 12,
+                      color: isDarkMode
+                          ? FreshSproutColors.darkTextSecondary
+                          : onSurfaceVariant,
+                      fontSize: 14,
+                      height: 20 / 14,
                     ),
               ),
-              const SizedBox(height: FreshSproutSpacing.sm),
+              const SizedBox(height: FreshSproutSpacing.md),
               Wrap(
                 alignment:
                     isWide ? WrapAlignment.start : WrapAlignment.center,
@@ -458,19 +537,37 @@ class _ProfileHeroCard extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Positioned(
-                right: -48,
-                top: -48,
+                right: -40,
+                top: -40,
                 child: ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
+                  imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
                   child: Container(
-                    width: 144,
-                    height: 144,
+                    width: 176,
+                    height: 176,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: (isDarkMode
-                              ? FreshSproutColors.darkAccent
-                              : FreshSproutColors.secondaryContainer)
-                          .withValues(alpha: 0.25),
+                      color: isDarkMode
+                          ? _ProfileDark.amber.withValues(alpha: 0.1)
+                          : FreshSproutColors.secondaryContainer
+                              .withValues(alpha: 0.25),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: -48,
+                bottom: -48,
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isDarkMode
+                          ? _ProfileDark.green.withValues(alpha: 0.1)
+                          : FreshSproutColors.primaryFixedDim
+                              .withValues(alpha: 0.15),
                     ),
                   ),
                 ),
@@ -522,8 +619,9 @@ class _AvatarSection extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: isDarkMode
                   ? [
-                      FreshSproutColors.darkAccent,
-                      FreshSproutColors.primaryContainer,
+                      _ProfileDark.green,
+                      _ProfileDark.amber,
+                      _ProfileDark.greenLight,
                     ]
                   : [
                       FreshSproutColors.primary,
@@ -534,14 +632,22 @@ class _AvatarSection extends StatelessWidget {
               color: isDarkMode
                   ? FreshSproutColors.darkBackground
                   : FreshSproutColors.surfaceContainerLowest,
-              width: 2,
+              width: 4,
             ),
-            boxShadow: FreshSproutElevation.level1,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: DecoratedBox(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: FreshSproutColors.surfaceContainerHigh,
+              color: isDarkMode
+                  ? FreshSproutColors.darkBorder
+                  : FreshSproutColors.surfaceContainerHigh,
             ),
             child: ClipOval(
               child: Image.network(
@@ -565,16 +671,31 @@ class _AvatarSection extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: isDarkMode
-                  ? FreshSproutColors.primaryContainer
-                  : FreshSproutColors.primaryContainer,
+              gradient: isDarkMode
+                  ? const LinearGradient(
+                      colors: [
+                        Color(0xFF059669),
+                        Color(0xFF10B981),
+                      ],
+                    )
+                  : null,
+              color: isDarkMode ? null : FreshSproutColors.primaryContainer,
               borderRadius: FreshSproutRadius.fullBorder,
               border: Border.all(
                 color: isDarkMode
                     ? FreshSproutColors.darkBackground
                     : FreshSproutColors.surfaceContainerLowest,
               ),
-              boxShadow: FreshSproutElevation.level1,
+              boxShadow: [
+                BoxShadow(
+                  color: (isDarkMode
+                          ? _ProfileDark.green
+                          : FreshSproutColors.primary)
+                      .withValues(alpha: 0.35),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -583,7 +704,7 @@ class _AvatarSection extends StatelessWidget {
                   Icons.verified,
                   size: 12,
                   color: isDarkMode
-                      ? FreshSproutColors.onPrimaryContainer
+                      ? const Color(0xFFFCD34D)
                       : FreshSproutColors.onPrimaryContainer,
                 ),
                 const SizedBox(width: 4),
@@ -616,15 +737,15 @@ class _MemberSinceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: isDarkMode
-            ? FreshSproutColors.darkCard
+            ? const Color(0xFF022C22).withValues(alpha: 0.6)
             : FreshSproutColors.surfaceContainerLow,
         borderRadius: FreshSproutRadius.fullBorder,
         border: Border.all(
           color: isDarkMode
-              ? FreshSproutColors.darkBorder
+              ? const Color(0xFF065F46).withValues(alpha: 0.6)
               : FreshSproutColors.surfaceContainer,
         ),
       ),
@@ -635,7 +756,7 @@ class _MemberSinceChip extends StatelessWidget {
             Icons.calendar_today_outlined,
             size: 13,
             color: isDarkMode
-                ? FreshSproutColors.darkAccent
+                ? _ProfileDark.greenLight
                 : FreshSproutColors.secondary,
           ),
           const SizedBox(width: 4),
@@ -643,9 +764,9 @@ class _MemberSinceChip extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: isDarkMode
-                      ? FreshSproutColors.darkAccent
+                      ? _ProfileDark.greenLight
                       : FreshSproutColors.secondary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   fontSize: 11,
                   letterSpacing: 0,
                 ),
@@ -674,37 +795,35 @@ class _ProfileCompactButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent =
-        isDarkMode ? FreshSproutColors.darkAccent : FreshSproutColors.primary;
-    final foreground = filled ? accent : FreshSproutColors.onSurfaceVariant;
-    final background = filled
-        ? (isDarkMode
-            ? FreshSproutColors.darkCard
-            : FreshSproutColors.surfaceContainerLow)
+        isDarkMode ? _ProfileDark.greenLight : FreshSproutColors.primary;
+    final foreground = filled
+        ? accent
         : (isDarkMode
-            ? FreshSproutColors.darkBackground
+            ? FreshSproutColors.darkTextSecondary
+            : FreshSproutColors.onSurfaceVariant);
+    final background = isDarkMode
+        ? (filled
+            ? FreshSproutColors.darkSurfaceElevated
+            : FreshSproutColors.darkSurfaceElevated.withValues(alpha: 0.6))
+        : (filled
+            ? FreshSproutColors.surfaceContainerLow
             : FreshSproutColors.surfaceBright);
 
     return Material(
       color: background,
-      borderRadius: _ProfileSpec.buttonRadius,
+      borderRadius: _ProfileSpec.innerRadius,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: _ProfileSpec.buttonRadius,
+        borderRadius: _ProfileSpec.innerRadius,
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: _ProfileSpec.btnHPad,
-            vertical: _ProfileSpec.btnVPad,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            borderRadius: _ProfileSpec.buttonRadius,
-            border: filled
-                ? null
-                : Border.all(
-                    color: isDarkMode
-                        ? FreshSproutColors.darkBorder
-                        : FreshSproutColors.outlineVariant
-                            .withValues(alpha: 0.4),
-                  ),
+            borderRadius: _ProfileSpec.innerRadius,
+            border: Border.all(
+              color: isDarkMode
+                  ? FreshSproutColors.darkBorder
+                  : FreshSproutColors.outlineVariant.withValues(alpha: 0.4),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -715,7 +834,7 @@ class _ProfileCompactButton extends StatelessWidget {
                 label,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: foreground,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: filled ? FontWeight.w600 : FontWeight.w500,
                       fontSize: 12,
                       height: 16 / 12,
                       letterSpacing: 0.24,
@@ -747,7 +866,7 @@ class _PersonalMetricsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent =
-        isDarkMode ? FreshSproutColors.darkAccent : FreshSproutColors.primary;
+        isDarkMode ? _ProfileDark.greenLight : FreshSproutColors.primary;
 
     final metrics = [
       _MetricCard(
@@ -755,10 +874,15 @@ class _PersonalMetricsSection extends StatelessWidget {
         label: 'Total Economizado',
         value: 'R\$ ${formatPrice(totalSaved)}',
         icon: Icons.savings_outlined,
-        iconBackground: FreshSproutColors.secondaryContainer.withValues(
-          alpha: isDarkMode ? 0.3 : 0.4,
-        ),
+        iconBackground: isDarkMode
+            ? _ProfileDark.green.withValues(alpha: 0.15)
+            : FreshSproutColors.secondaryContainer.withValues(alpha: 0.4),
+        iconColor: isDarkMode ? _ProfileDark.greenLight : FreshSproutColors.primary,
+        iconBorder: isDarkMode
+            ? _ProfileDark.green.withValues(alpha: 0.3)
+            : FreshSproutColors.outlineVariant.withValues(alpha: 0.5),
         valueColor: accent,
+        showGlow: true,
         footer: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -766,7 +890,7 @@ class _PersonalMetricsSection extends StatelessWidget {
               Icons.arrow_upward,
               size: 13,
               color: isDarkMode
-                  ? FreshSproutColors.darkAccent
+                  ? _ProfileDark.green
                   : FreshSproutColors.secondary,
             ),
             const SizedBox(width: 2),
@@ -774,7 +898,7 @@ class _PersonalMetricsSection extends StatelessWidget {
               '+14% vs. mês anterior',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: isDarkMode
-                        ? FreshSproutColors.darkAccent
+                        ? _ProfileDark.green
                         : FreshSproutColors.secondary,
                     fontWeight: FontWeight.w600,
                     fontSize: 11,
@@ -791,8 +915,12 @@ class _PersonalMetricsSection extends StatelessWidget {
         value: '$completedLists listas',
         icon: Icons.task_alt_outlined,
         iconBackground: isDarkMode
-            ? FreshSproutColors.darkCard
+            ? FreshSproutColors.darkSurfaceElevated
             : FreshSproutColors.surfaceContainer,
+        iconColor: isDarkMode
+            ? FreshSproutColors.darkTextSecondary
+            : FreshSproutColors.primary,
+        iconBorder: _ProfileSpec.cardBorder(isDarkMode),
         footer: Text(
           allItemsChecked
               ? '100% de itens conferidos'
@@ -812,20 +940,29 @@ class _PersonalMetricsSection extends StatelessWidget {
         value: 'R\$ ${formatPrice(monthlyAverage)}',
         icon: Icons.insights_outlined,
         iconBackground: isDarkMode
-            ? FreshSproutColors.darkCard
+            ? FreshSproutColors.darkSurfaceElevated
             : FreshSproutColors.surfaceContainer,
+        iconColor: isDarkMode
+            ? FreshSproutColors.darkTextSecondary
+            : FreshSproutColors.primary,
+        iconBorder: _ProfileSpec.cardBorder(isDarkMode),
         footer: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: FreshSproutColors.secondaryContainer.withValues(
-              alpha: isDarkMode ? 0.2 : 0.3,
-            ),
+            color: isDarkMode
+                ? const Color(0xFF022C22).withValues(alpha: 0.8)
+                : FreshSproutColors.secondaryContainer.withValues(alpha: 0.3),
             borderRadius: FreshSproutRadius.smBorder,
+            border: Border.all(
+              color: isDarkMode
+                  ? const Color(0xFF065F46).withValues(alpha: 0.6)
+                  : FreshSproutColors.outlineVariant.withValues(alpha: 0.5),
+            ),
           ),
           child: Text(
             'Sob controle',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: accent,
+                  color: isDarkMode ? _ProfileDark.greenLight : accent,
                   fontWeight: FontWeight.w600,
                   fontSize: 11,
                   height: 1,
@@ -848,28 +985,50 @@ class _PersonalMetricsSection extends StatelessWidget {
                     color: isDarkMode
                         ? FreshSproutColors.darkTextPrimary
                         : FreshSproutColors.onSurface,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     fontSize: 18,
                     height: 24 / 18,
                   ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.trending_up, size: 15, color: accent),
-                const SizedBox(width: 2),
-                Text(
-                  'Visão Geral',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: isDarkMode
-                            ? FreshSproutColors.darkAccent
-                            : FreshSproutColors.secondary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        height: 16 / 12,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xFF022C22).withValues(alpha: 0.4)
+                    : FreshSproutColors.secondaryContainer.withValues(
+                        alpha: 0.3,
                       ),
+                borderRadius: FreshSproutRadius.fullBorder,
+                border: Border.all(
+                  color: isDarkMode
+                      ? const Color(0xFF065F46).withValues(alpha: 0.6)
+                      : FreshSproutColors.outlineVariant.withValues(alpha: 0.5),
                 ),
-              ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.trending_up,
+                    size: 15,
+                    color: isDarkMode
+                        ? _ProfileDark.green
+                        : FreshSproutColors.secondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Visão Geral',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: isDarkMode
+                              ? _ProfileDark.green
+                              : FreshSproutColors.secondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          height: 16 / 12,
+                        ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -881,7 +1040,7 @@ class _PersonalMetricsSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   for (var i = 0; i < metrics.length; i++) ...[
-                    if (i > 0) const SizedBox(width: FreshSproutSpacing.xs),
+                    if (i > 0) const SizedBox(width: _ProfileSpec.metricGap),
                     Expanded(child: metrics[i]),
                   ],
                 ],
@@ -890,7 +1049,7 @@ class _PersonalMetricsSection extends StatelessWidget {
             return Column(
               children: [
                 for (var i = 0; i < metrics.length; i++) ...[
-                  if (i > 0) const SizedBox(height: FreshSproutSpacing.xs),
+                  if (i > 0) const SizedBox(height: _ProfileSpec.metricGap),
                   metrics[i],
                 ],
               ],
@@ -909,8 +1068,11 @@ class _MetricCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.iconBackground,
+    this.iconColor,
+    this.iconBorder,
     this.valueColor,
     this.footer,
+    this.showGlow = false,
   });
 
   final bool isDarkMode;
@@ -918,63 +1080,95 @@ class _MetricCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color iconBackground;
+  final Color? iconColor;
+  final Color? iconBorder;
   final Color? valueColor;
   final Widget? footer;
+  final bool showGlow;
 
   @override
   Widget build(BuildContext context) {
     return _ProfileSurfaceCard(
       isDarkMode: isDarkMode,
       padding: const EdgeInsets.all(FreshSproutSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          if (showGlow)
+            Positioned(
+              right: -24,
+              bottom: -24,
+              child: ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: (isDarkMode
+                            ? _ProfileDark.green
+                            : FreshSproutColors.primary)
+                        .withValues(alpha: 0.1),
+                  ),
+                ),
+              ),
+            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    label.toUpperCase(),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: isDarkMode
+                              ? FreshSproutColors.darkTextMuted
+                              : FreshSproutColors.onSurfaceVariant,
+                          letterSpacing: 0.8,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  Container(
+                    width: _ProfileSpec.metricIconSize,
+                    height: _ProfileSpec.metricIconSize,
+                    decoration: BoxDecoration(
+                      color: iconBackground,
+                      shape: BoxShape.circle,
+                      border: iconBorder != null
+                          ? Border.all(color: iconBorder!)
+                          : null,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 17,
+                      color: iconColor ??
+                          (isDarkMode
+                              ? FreshSproutColors.darkAccent
+                              : FreshSproutColors.primary),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               Text(
-                label.toUpperCase(),
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: isDarkMode
-                          ? FreshSproutColors.darkTextMuted
-                          : FreshSproutColors.onSurfaceVariant,
-                      letterSpacing: 0.04,
+                value,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: valueColor ??
+                          (isDarkMode
+                              ? FreshSproutColors.darkTextPrimary
+                              : FreshSproutColors.onSurface),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 24,
+                      height: 28 / 24,
                     ),
               ),
-              Container(
-                width: _ProfileSpec.metricIconSize,
-                height: _ProfileSpec.metricIconSize,
-                decoration: BoxDecoration(
-                  color: iconBackground,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: isDarkMode
-                      ? FreshSproutColors.darkAccent
-                      : FreshSproutColors.primary,
-                ),
-              ),
+              if (footer != null) ...[
+                const SizedBox(height: 4),
+                footer!,
+              ],
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: valueColor ??
-                      (isDarkMode
-                          ? FreshSproutColors.darkTextPrimary
-                          : FreshSproutColors.onSurface),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 22,
-                  height: 28 / 22,
-                ),
-          ),
-          if (footer != null) ...[
-            const SizedBox(height: 4),
-            footer!,
-          ],
         ],
       ),
     );
@@ -1013,10 +1207,13 @@ class _BudgetPlanningSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent =
-        isDarkMode ? FreshSproutColors.darkAccent : FreshSproutColors.primary;
+        isDarkMode ? _ProfileDark.greenLight : FreshSproutColors.primary;
+    final amberAccent =
+        isDarkMode ? _ProfileDark.amber : FreshSproutColors.secondary;
 
     return _ProfileSurfaceCard(
       isDarkMode: isDarkMode,
+      elevated: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1029,15 +1226,21 @@ class _BudgetPlanningSection extends StatelessWidget {
                   width: _ProfileSpec.sectionIconSize,
                   height: _ProfileSpec.sectionIconSize,
                   decoration: BoxDecoration(
-                    color: FreshSproutColors.secondaryContainer.withValues(
-                      alpha: isDarkMode ? 0.2 : 0.5,
+                    color: isDarkMode
+                        ? _ProfileDark.green.withValues(alpha: 0.15)
+                        : FreshSproutColors.secondaryContainer
+                            .withValues(alpha: 0.5),
+                    borderRadius: _ProfileSpec.innerRadius,
+                    border: Border.all(
+                      color: isDarkMode
+                          ? _ProfileDark.green.withValues(alpha: 0.3)
+                          : FreshSproutColors.primary.withValues(alpha: 0.2),
                     ),
-                    borderRadius: _ProfileSpec.buttonRadius,
                   ),
                   child: Icon(
                     Icons.account_balance_wallet_outlined,
                     size: 20,
-                    color: accent,
+                    color: isDarkMode ? _ProfileDark.greenLight : accent,
                   ),
                 ),
                 const SizedBox(width: FreshSproutSpacing.xs),
@@ -1077,7 +1280,7 @@ class _BudgetPlanningSection extends StatelessWidget {
                   child: Text(
                     'Ajustar',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: accent,
+                          color: isDarkMode ? _ProfileDark.greenLight : accent,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                           height: 16 / 12,
@@ -1089,12 +1292,13 @@ class _BudgetPlanningSection extends StatelessWidget {
           ),
           const SizedBox(height: FreshSproutSpacing.md),
           Container(
-            padding: const EdgeInsets.all(FreshSproutSpacing.sm),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isDarkMode
                   ? FreshSproutColors.darkBackground
                   : FreshSproutColors.surfaceContainerLow,
-              borderRadius: _ProfileSpec.buttonRadius,
+              borderRadius: _ProfileSpec.innerRadius,
+              border: Border.all(color: _ProfileSpec.subtleBorder(isDarkMode)),
             ),
             child: Column(
               children: [
@@ -1123,12 +1327,12 @@ class _BudgetPlanningSection extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: isDarkMode
-                                ? FreshSproutColors.darkCard
+                                ? FreshSproutColors.darkSurfaceElevated
                                 : FreshSproutColors.surfaceContainerLowest,
                             borderRadius: FreshSproutRadius.fullBorder,
                             border: Border.all(
                               color: isDarkMode
-                                  ? FreshSproutColors.darkBorder
+                                  ? _ProfileDark.amber.withValues(alpha: 0.2)
                                   : FreshSproutColors.surfaceContainerHigh,
                             ),
                           ),
@@ -1138,9 +1342,9 @@ class _BudgetPlanningSection extends StatelessWidget {
                                 .textTheme
                                 .labelSmall
                                 ?.copyWith(
-                                  color: accent,
+                                  color: isDarkMode ? amberAccent : accent,
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 10,
+                                  fontSize: 11,
                                 ),
                           ),
                         ),
@@ -1187,8 +1391,17 @@ class _BudgetPlanningSection extends StatelessWidget {
                 FreshSproutProgressBar(
                   value: budgetUsedRatio,
                   isDark: isDarkMode,
+                  trackColor: isDarkMode
+                      ? FreshSproutColors.darkProgressTrack
+                      : null,
                   gradient: isDarkMode
-                      ? null
+                      ? const LinearGradient(
+                          colors: [
+                            Color(0xFF10B981),
+                            Color(0xFF34D399),
+                            Color(0xFFFBBF24),
+                          ],
+                        )
                       : const LinearGradient(
                           colors: [
                             FreshSproutColors.brandMint,
@@ -1204,7 +1417,11 @@ class _BudgetPlanningSection extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check_circle_outline, size: 13, color: accent),
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 14,
+                            color: isDarkMode ? _ProfileDark.green : accent,
+                          ),
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
@@ -1213,7 +1430,9 @@ class _BudgetPlanningSection extends StatelessWidget {
                                   .textTheme
                                   .labelSmall
                                   ?.copyWith(
-                                    color: accent,
+                                    color: isDarkMode
+                                        ? _ProfileDark.green
+                                        : accent,
                                     fontWeight: FontWeight.w500,
                                     fontSize: 11,
                                     letterSpacing: 0,
@@ -1227,9 +1446,9 @@ class _BudgetPlanningSection extends StatelessWidget {
                       '$budgetUsedPercent% consumido',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: isDarkMode
-                                ? FreshSproutColors.darkTextMuted
+                                ? amberAccent
                                 : FreshSproutColors.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                             fontSize: 11,
                             letterSpacing: 0,
                           ),
@@ -1287,13 +1506,13 @@ class _FavoriteMarketChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent =
-        isDarkMode ? FreshSproutColors.darkAccent : FreshSproutColors.primary;
+        isDarkMode ? _ProfileDark.greenLight : FreshSproutColors.primary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isDarkMode
-            ? FreshSproutColors.darkBackground
+            ? FreshSproutColors.darkSurfaceElevated
             : FreshSproutColors.surfaceContainerLow,
         borderRadius: FreshSproutRadius.fullBorder,
         border: Border.all(
@@ -1320,7 +1539,10 @@ class _FavoriteMarketChip extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: isDarkMode ? _ProfileDark.greenLight : accent,
+              shape: BoxShape.circle,
+            ),
           ),
         ],
       ),
@@ -1340,7 +1562,7 @@ class _AddFavoriteChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent =
-        isDarkMode ? FreshSproutColors.darkAccent : FreshSproutColors.primary;
+        isDarkMode ? _ProfileDark.greenLight : FreshSproutColors.primary;
 
     return Material(
       color: Colors.transparent,
@@ -1348,7 +1570,7 @@ class _AddFavoriteChip extends StatelessWidget {
         borderRadius: FreshSproutRadius.fullBorder,
         side: BorderSide(
           color: isDarkMode
-              ? FreshSproutColors.darkBorder
+              ? FreshSproutColors.darkTextMuted
               : FreshSproutColors.outline,
           style: BorderStyle.solid,
         ),
@@ -1398,6 +1620,7 @@ class _PreferencesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ProfileSurfaceCard(
       isDarkMode: isDarkMode,
+      elevated: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1410,9 +1633,10 @@ class _PreferencesSection extends StatelessWidget {
                   height: _ProfileSpec.sectionIconSize,
                   decoration: BoxDecoration(
                     color: isDarkMode
-                        ? FreshSproutColors.darkCard
+                        ? FreshSproutColors.darkSurfaceElevated
                         : FreshSproutColors.surfaceContainer,
-                    borderRadius: _ProfileSpec.buttonRadius,
+                    borderRadius: _ProfileSpec.innerRadius,
+                    border: Border.all(color: _ProfileSpec.cardBorder(isDarkMode)),
                   ),
                   child: Icon(
                     Icons.tune,
@@ -1440,14 +1664,16 @@ class _PreferencesSection extends StatelessWidget {
           _PreferenceToggleRow(
             isDarkMode: isDarkMode,
             icon: Icons.dark_mode_outlined,
+            iconColor: isDarkMode ? _ProfileDark.amber : null,
             title: 'Tema Escuro',
+            activeBadge: isDarkMode ? 'Ativo' : null,
             subtitle:
                 'Alternar modo noturno com fundo profundo e destaques âmbar',
             value: isDarkMode,
             onChanged: (_) => onToggleTheme(),
             extra: Row(
               children: [
-                _ColorDot(
+                const _ColorDot(
                   color: FreshSproutColors.darkBackground,
                   border: true,
                 ),
@@ -1463,13 +1689,16 @@ class _PreferencesSection extends StatelessWidget {
                       ),
                 ),
                 const SizedBox(width: 12),
-                const _ColorDot(color: FreshSproutColors.darkAccent),
+                const _ColorDot(
+                  color: FreshSproutColors.darkAccent,
+                  glow: true,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Acento Âmbar',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: isDarkMode
-                            ? FreshSproutColors.darkTextMuted
+                            ? const Color(0xFFFCD34D)
                             : FreshSproutColors.onSurfaceVariant,
                         fontSize: 11,
                         letterSpacing: 0,
@@ -1486,6 +1715,7 @@ class _PreferencesSection extends StatelessWidget {
           _PreferenceToggleRow(
             isDarkMode: isDarkMode,
             icon: Icons.notifications_active_outlined,
+            iconColor: isDarkMode ? _ProfileDark.greenLight : null,
             title: 'Alertas de Promoção e Gastos',
             subtitle:
                 'Avisos ao atingir 80% da meta mensal e descontos nos favoritos',
@@ -1511,10 +1741,15 @@ class _PreferencesSection extends StatelessWidget {
 }
 
 class _ColorDot extends StatelessWidget {
-  const _ColorDot({required this.color, this.border = false});
+  const _ColorDot({
+    required this.color,
+    this.border = false,
+    this.glow = false,
+  });
 
   final Color color;
   final bool border;
+  final bool glow;
 
   @override
   Widget build(BuildContext context) {
@@ -1525,7 +1760,15 @@ class _ColorDot extends StatelessWidget {
         color: color,
         shape: BoxShape.circle,
         border: border
-            ? Border.all(color: FreshSproutColors.outlineVariant)
+            ? Border.all(color: FreshSproutColors.darkBorderLight)
+            : null,
+        boxShadow: glow
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.8),
+                  blurRadius: 6,
+                ),
+              ]
             : null,
       ),
     );
@@ -1540,6 +1783,8 @@ class _PreferenceToggleRow extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.onChanged,
+    this.iconColor,
+    this.activeBadge,
     this.extra,
   });
 
@@ -1549,31 +1794,70 @@ class _PreferenceToggleRow extends StatelessWidget {
   final String subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final Color? iconColor;
+  final String? activeBadge;
   final Widget? extra;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: FreshSproutSpacing.xs),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _RoundIcon(icon: icon, isDarkMode: isDarkMode),
+          _RoundIcon(
+            icon: icon,
+            isDarkMode: isDarkMode,
+            iconColor: iconColor,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isDarkMode
-                            ? FreshSproutColors.darkTextPrimary
-                            : FreshSproutColors.onSurface,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        height: 20 / 14,
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: isDarkMode
+                                ? FreshSproutColors.darkTextPrimary
+                                : FreshSproutColors.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            height: 20 / 14,
+                          ),
+                    ),
+                    if (activeBadge != null) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF451A03).withValues(alpha: 0.6),
+                          borderRadius: FreshSproutRadius.smBorder,
+                          border: Border.all(
+                            color: const Color(0xFF92400E).withValues(
+                              alpha: 0.6,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          activeBadge!.toUpperCase(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelSmall
+                              ?.copyWith(
+                                color: _ProfileDark.amber,
+                                fontSize: 10,
+                                letterSpacing: 0.4,
+                              ),
+                        ),
                       ),
+                    ],
+                  ],
                 ),
                 Text(
                   subtitle,
@@ -1621,7 +1905,7 @@ class _PreferenceActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: FreshSproutSpacing.xs),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
           _RoundIcon(icon: icon, isDarkMode: isDarkMode),
@@ -1637,6 +1921,8 @@ class _PreferenceActionRow extends StatelessWidget {
                             ? FreshSproutColors.darkTextPrimary
                             : FreshSproutColors.onSurface,
                         fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        height: 20 / 14,
                       ),
                 ),
                 Text(
@@ -1645,6 +1931,8 @@ class _PreferenceActionRow extends StatelessWidget {
                         color: isDarkMode
                             ? FreshSproutColors.darkTextMuted
                             : FreshSproutColors.onSurfaceVariant,
+                        fontSize: 12,
+                        height: 16 / 12,
                       ),
                 ),
               ],
@@ -1652,7 +1940,7 @@ class _PreferenceActionRow extends StatelessWidget {
           ),
           Material(
             color: isDarkMode
-                ? FreshSproutColors.darkCard
+                ? FreshSproutColors.darkSurfaceElevated
                 : FreshSproutColors.surfaceContainerLow,
             borderRadius: FreshSproutRadius.smBorder,
             child: InkWell(
@@ -1660,7 +1948,7 @@ class _PreferenceActionRow extends StatelessWidget {
               borderRadius: FreshSproutRadius.smBorder,
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   borderRadius: FreshSproutRadius.smBorder,
                   border: Border.all(
@@ -1721,6 +2009,7 @@ class _AccountSupportSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ProfileSurfaceCard(
       isDarkMode: isDarkMode,
+      elevated: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1733,9 +2022,10 @@ class _AccountSupportSection extends StatelessWidget {
                   height: _ProfileSpec.sectionIconSize,
                   decoration: BoxDecoration(
                     color: isDarkMode
-                        ? FreshSproutColors.darkCard
+                        ? FreshSproutColors.darkSurfaceElevated
                         : FreshSproutColors.surfaceContainer,
-                    borderRadius: _ProfileSpec.buttonRadius,
+                    borderRadius: _ProfileSpec.innerRadius,
+                    border: Border.all(color: _ProfileSpec.cardBorder(isDarkMode)),
                   ),
                   child: Icon(
                     Icons.support_agent_outlined,
@@ -1783,34 +2073,48 @@ class _AccountSupportSection extends StatelessWidget {
           ),
           const SizedBox(height: FreshSproutSpacing.sm),
           Material(
-            color: FreshSproutColors.errorContainer.withValues(
-              alpha: isDarkMode ? 0.25 : 0.4,
-            ),
-            borderRadius: _ProfileSpec.buttonRadius,
+            color: isDarkMode
+                ? const Color(0xFF450A0A).withValues(alpha: 0.4)
+                : FreshSproutColors.errorContainer.withValues(alpha: 0.4),
+            borderRadius: _ProfileSpec.innerRadius,
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: onLogout,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.logout,
-                      size: 20,
-                      color: FreshSproutColors.error,
-                    ),
-                    const SizedBox(width: FreshSproutSpacing.xs),
-                    Text(
-                      'Sair da Conta',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: FreshSproutColors.error,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            height: 18 / 14,
-                          ),
-                    ),
-                  ],
+              child: Ink(
+                decoration: BoxDecoration(
+                  borderRadius: _ProfileSpec.innerRadius,
+                  border: Border.all(
+                    color: isDarkMode
+                        ? const Color(0xFF7F1D1D).withValues(alpha: 0.5)
+                        : FreshSproutColors.error.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.logout,
+                        size: 20,
+                        color: isDarkMode
+                            ? const Color(0xFFF87171)
+                            : FreshSproutColors.error,
+                      ),
+                      const SizedBox(width: FreshSproutSpacing.xs),
+                      Text(
+                        'Sair da Conta',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: isDarkMode
+                                  ? const Color(0xFFF87171)
+                                  : FreshSproutColors.error,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              height: 18 / 14,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1838,49 +2142,69 @@ class _SupportLinkTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isDarkMode
-                  ? FreshSproutColors.darkTextMuted
-                  : FreshSproutColors.onSurfaceVariant,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isDarkMode
-                              ? FreshSproutColors.darkTextMuted
-                              : FreshSproutColors.onSurfaceVariant,
-                        ),
-                  ),
-                ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? FreshSproutColors.darkSurfaceElevated
+                      : FreshSproutColors.surfaceContainerLow,
+                  borderRadius: FreshSproutRadius.smBorder,
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: isDarkMode
+                      ? FreshSproutColors.darkTextSecondary
+                      : FreshSproutColors.onSurfaceVariant,
+                ),
               ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: isDarkMode
-                  ? FreshSproutColors.darkBorder
-                  : FreshSproutColors.outline,
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: isDarkMode
+                                ? FreshSproutColors.darkTextPrimary
+                                : FreshSproutColors.onSurface,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            height: 20 / 14,
+                          ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDarkMode
+                                ? FreshSproutColors.darkTextMuted
+                                : FreshSproutColors.onSurfaceVariant,
+                            fontSize: 12,
+                            height: 16 / 12,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: isDarkMode
+                    ? FreshSproutColors.darkTextMuted
+                    : FreshSproutColors.outline,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1888,10 +2212,15 @@ class _SupportLinkTile extends StatelessWidget {
 }
 
 class _RoundIcon extends StatelessWidget {
-  const _RoundIcon({required this.icon, required this.isDarkMode});
+  const _RoundIcon({
+    required this.icon,
+    required this.isDarkMode,
+    this.iconColor,
+  });
 
   final IconData icon;
   final bool isDarkMode;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1900,16 +2229,27 @@ class _RoundIcon extends StatelessWidget {
       height: _ProfileSpec.rowIconSize,
       decoration: BoxDecoration(
         color: isDarkMode
-            ? FreshSproutColors.darkCard
+            ? FreshSproutColors.darkSurfaceElevated
             : FreshSproutColors.surfaceContainerLow,
         shape: BoxShape.circle,
+        border: Border.all(color: _ProfileSpec.cardBorder(isDarkMode)),
+        boxShadow: iconColor == _ProfileDark.amber
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
       ),
       child: Icon(
         icon,
         size: 20,
-        color: isDarkMode
-            ? FreshSproutColors.darkTextPrimary
-            : FreshSproutColors.onSurface,
+        color: iconColor ??
+            (isDarkMode
+                ? FreshSproutColors.darkTextPrimary
+                : FreshSproutColors.onSurface),
       ),
     );
   }
@@ -1928,11 +2268,8 @@ class _ProfileSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = isDarkMode
-        ? FreshSproutColors.darkAccent
-        : FreshSproutColors.primary;
     final trackColor = value
-        ? activeColor
+        ? null
         : (isDarkMode
             ? FreshSproutColors.darkBorder
             : FreshSproutColors.surfaceContainerHighest);
@@ -1949,7 +2286,33 @@ class _ProfileSwitch extends StatelessWidget {
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             color: trackColor,
+            gradient: value
+                ? (isDarkMode
+                    ? const LinearGradient(
+                        colors: [
+                          Color(0xFF10B981),
+                          Color(0xFF34D399),
+                        ],
+                      )
+                    : LinearGradient(
+                        colors: [
+                          FreshSproutColors.primary,
+                          FreshSproutColors.primaryContainer,
+                        ],
+                      ))
+                : null,
             borderRadius: FreshSproutRadius.fullBorder,
+            boxShadow: value
+                ? [
+                    BoxShadow(
+                      color: (isDarkMode
+                              ? _ProfileDark.green
+                              : FreshSproutColors.primary)
+                          .withValues(alpha: 0.25),
+                      blurRadius: 4,
+                    ),
+                  ]
+                : null,
           ),
           child: AnimatedAlign(
             duration: const Duration(milliseconds: 200),
@@ -2013,11 +2376,13 @@ class _ProfileSurfaceCard extends StatelessWidget {
     required this.isDarkMode,
     required this.child,
     this.padding = const EdgeInsets.all(FreshSproutSpacing.md),
+    this.elevated = false,
   });
 
   final bool isDarkMode;
   final Widget child;
   final EdgeInsets padding;
+  final bool elevated;
 
   @override
   Widget build(BuildContext context) {
@@ -2026,17 +2391,17 @@ class _ProfileSurfaceCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: isDarkMode
-            ? FreshSproutColors.darkCard
+            ? FreshSproutColors.darkSurface
             : FreshSproutColors.surfaceContainerLowest,
         borderRadius: _ProfileSpec.cardRadius,
         border: Border.all(
           color: isDarkMode
-              ? FreshSproutColors.darkBorder.withValues(alpha: 0.6)
+              ? FreshSproutColors.darkBorder
               : FreshSproutColors.surfaceContainerHighest.withValues(
                   alpha: 0.6,
                 ),
         ),
-        boxShadow: isDarkMode ? null : FreshSproutElevation.level1,
+        boxShadow: _ProfileSpec.cardShadow(elevated: elevated),
       ),
       child: child,
     );

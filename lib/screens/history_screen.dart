@@ -180,7 +180,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _openList(ShoppingList list) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ListDetailScreen(listId: list.id),
+        builder: (context) => ListDetailScreen(
+          listId: list.id,
+          isDarkMode: widget.isDarkMode,
+        ),
       ),
     );
     _reload();
@@ -308,15 +311,7 @@ class _HistoryHeader extends StatelessWidget {
                     ? FreshSproutColors.darkBackground
                     : FreshSproutColors.surface)
                 .withValues(alpha: 0.95),
-            boxShadow: isDarkMode
-                ? null
-                : [
-                    BoxShadow(
-                      color: FreshSproutColors.shadowTint.withValues(alpha: 0.03),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+            boxShadow: null,
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: FreshSproutSpacing.marginMobile,
@@ -1563,7 +1558,7 @@ class _HistorySurfaceCard extends StatelessWidget {
               ? FreshSproutColors.darkBorder.withValues(alpha: 0.6)
               : FreshSproutColors.borderSubtle,
         ),
-        boxShadow: isDarkMode ? null : FreshSproutElevation.level1,
+        boxShadow: null,
       ),
       child: child,
     );

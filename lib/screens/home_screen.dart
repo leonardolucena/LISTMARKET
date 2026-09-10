@@ -56,7 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openList(ShoppingList list) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ListDetailScreen(listId: list.id),
+        builder: (context) => ListDetailScreen(
+          listId: list.id,
+          isDarkMode: widget.isDarkMode,
+        ),
       ),
     );
     _loadLists();
@@ -330,13 +333,13 @@ class _HomeHeaderBar extends StatelessWidget {
             color: isDarkMode
                 ? FreshSproutColors.darkBackground.withValues(alpha: 0.95)
                 : FreshSproutColors.surface.withValues(alpha: 0.95),
-            border: isDarkMode
-                ? Border(
-                    bottom: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
-                  )
-                : null,
+            border: Border(
+              bottom: BorderSide(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : FreshSproutColors.outlineVariant.withValues(alpha: 0.5),
+              ),
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -1237,7 +1240,7 @@ class _MiniStatCard extends StatelessWidget {
               ? FreshSproutColors.darkBorder
               : FreshSproutColors.outlineVariant.withValues(alpha: 0.3),
         ),
-        boxShadow: isDarkMode ? FreshSproutElevation.level1 : null,
+        boxShadow: FreshSproutElevation.level1,
       ),
       child: Row(
         children: [
@@ -1311,9 +1314,11 @@ class _ListsSectionHeader extends StatelessWidget {
                     ? FreshSproutColors.darkCard
                     : FreshSproutColors.surfaceContainer,
                 borderRadius: FreshSproutRadius.fullBorder,
-                border: isDarkMode
-                    ? Border.all(color: FreshSproutColors.darkBorder)
-                    : null,
+                border: Border.all(
+                  color: isDarkMode
+                      ? FreshSproutColors.darkBorder
+                      : FreshSproutColors.outlineVariant.withValues(alpha: 0.5),
+                ),
               ),
               child: Text(
                 '$listCount',
