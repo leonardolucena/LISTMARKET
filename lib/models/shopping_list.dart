@@ -7,6 +7,8 @@ class ShoppingList {
     required this.createdAt,
     required this.updatedAt,
     this.items = const [],
+    this.emoji = '🛒',
+    this.budgetCeiling,
   });
 
   final String id;
@@ -14,6 +16,8 @@ class ShoppingList {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<ListItem> items;
+  final String emoji;
+  final double? budgetCeiling;
 
   int get pendingCount => items.where((item) => !item.isPurchased).length;
 
@@ -30,6 +34,9 @@ class ShoppingList {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<ListItem>? items,
+    String? emoji,
+    double? budgetCeiling,
+    bool clearBudgetCeiling = false,
   }) {
     return ShoppingList(
       id: id ?? this.id,
@@ -37,6 +44,9 @@ class ShoppingList {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       items: items ?? this.items,
+      emoji: emoji ?? this.emoji,
+      budgetCeiling:
+          clearBudgetCeiling ? null : (budgetCeiling ?? this.budgetCeiling),
     );
   }
 
@@ -47,6 +57,8 @@ class ShoppingList {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'items': items.map((item) => item.toJson()).toList(),
+      'emoji': emoji,
+      if (budgetCeiling != null) 'budgetCeiling': budgetCeiling,
     };
   }
 
@@ -56,6 +68,8 @@ class ShoppingList {
       name: json['name'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      emoji: json['emoji'] as String? ?? '🛒',
+      budgetCeiling: (json['budgetCeiling'] as num?)?.toDouble(),
       items: (json['items'] as List<dynamic>? ?? [])
           .map(
             (item) => ListItem.fromJson(

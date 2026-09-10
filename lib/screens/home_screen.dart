@@ -45,12 +45,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _createList() async {
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (context) => const CreateListScreen()),
+    final listId = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => CreateListScreen(
+          isDarkMode: widget.isDarkMode,
+          onToggleTheme: widget.onToggleTheme,
+        ),
+      ),
     );
 
-    if (created != true || !mounted) return;
+    if (listId == null || !mounted) return;
     _loadLists();
+    final list = _repository.getListById(listId);
+    if (list != null) {
+      await _openList(list);
+    }
   }
 
   Future<void> _openList(ShoppingList list) async {
@@ -180,48 +189,52 @@ class _HomeScreenState extends State<HomeScreen> {
                       onCreateList: _createList,
                     ),
                     const SizedBox(height: FreshSproutSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MiniStatCard(
-                            isDarkMode: isDark,
-                            icon: Icons.shopping_cart_outlined,
-                            label: 'Listas ativas',
-                            value: '$_activeListsCount pendentes',
-                            iconBackground: isDark
-                                ? FreshSproutColors.darkAccent
-                                    .withValues(alpha: 0.15)
-                                : FreshSproutColors.secondaryContainer
-                                    .withValues(alpha: 0.4),
-                            iconColor: isDark
-                                ? FreshSproutColors.darkAccent
-                                : FreshSproutColors.primary,
-                            valueColor: isDark
-                                ? FreshSproutColors.darkTextPrimary
-                                : FreshSproutColors.onSurface,
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _MiniStatCard(
+                              isDarkMode: isDark,
+                              icon: Icons.shopping_cart_outlined,
+                              label: 'Listas ativas',
+                              value: '$_activeListsCount',
+                              valueSubtitle: 'pendentes',
+                              iconBackground: isDark
+                                  ? FreshSproutColors.darkAccent
+                                      .withValues(alpha: 0.15)
+                                  : FreshSproutColors.secondaryContainer
+                                      .withValues(alpha: 0.4),
+                              iconColor: isDark
+                                  ? FreshSproutColors.darkAccent
+                                  : FreshSproutColors.primary,
+                              valueColor: isDark
+                                  ? FreshSproutColors.darkTextPrimary
+                                  : FreshSproutColors.onSurface,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: FreshSproutSpacing.xs),
-                        Expanded(
-                          child: _MiniStatCard(
-                            isDarkMode: isDark,
-                            icon: Icons.savings_outlined,
-                            label: 'Economia estimada',
-                            value: 'R\$ ${formatPrice(_estimatedSavings)}',
-                            iconBackground: isDark
-                                ? FreshSproutColors.darkAccent
-                                    .withValues(alpha: 0.2)
-                                : FreshSproutColors.tertiaryFixed
-                                    .withValues(alpha: 0.6),
-                            iconColor: isDark
-                                ? FreshSproutColors.darkAccent
-                                : FreshSproutColors.tertiary,
-                            valueColor: isDark
-                                ? FreshSproutColors.darkAccent
-                                : FreshSproutColors.tertiary,
+                          const SizedBox(width: FreshSproutSpacing.xs),
+                          Expanded(
+                            child: _MiniStatCard(
+                              isDarkMode: isDark,
+                              icon: Icons.savings_outlined,
+                              label: 'Economia estimada',
+                              value: 'R\$ ${formatPrice(_estimatedSavings)}',
+                              iconBackground: isDark
+                                  ? FreshSproutColors.darkAccent
+                                      .withValues(alpha: 0.2)
+                                  : FreshSproutColors.tertiaryFixed
+                                      .withValues(alpha: 0.6),
+                              iconColor: isDark
+                                  ? FreshSproutColors.darkAccent
+                                  : FreshSproutColors.tertiary,
+                              valueColor: isDark
+                                  ? FreshSproutColors.darkAccent
+                                  : FreshSproutColors.tertiary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: FreshSproutSpacing.md),
                     _ListsSectionHeader(
@@ -1213,6 +1226,7 @@ class _MiniStatCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.valueSubtitle,
     required this.iconBackground,
     required this.iconColor,
     required this.valueColor,
@@ -1222,6 +1236,7 @@ class _MiniStatCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final String? valueSubtitle;
   final Color iconBackground;
   final Color iconColor;
   final Color valueColor;
@@ -1243,6 +1258,7 @@ class _MiniStatCard extends StatelessWidget {
         boxShadow: FreshSproutElevation.level1,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 40,
@@ -1257,22 +1273,40 @@ class _MiniStatCard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   label,
+                  maxLines: 2,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: isDarkMode
                             ? FreshSproutColors.darkTextMuted
                             : null,
                       ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         color: valueColor,
                         fontWeight: FontWeight.w700,
+                        height: 1.1,
                       ),
                 ),
+                if (valueSubtitle != null) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    valueSubtitle!,
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: valueColor,
+                          fontWeight: FontWeight.w600,
+                          height: 1.1,
+                        ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1587,6 +1621,7 @@ class _ShoppingListCard extends StatelessWidget {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             list.name,
@@ -1597,6 +1632,7 @@ class _ShoppingListCard extends StatelessWidget {
                                 .bodyLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  height: 1.15,
                                   decoration: completed
                                       ? TextDecoration.lineThrough
                                       : null,
@@ -1628,7 +1664,10 @@ class _ShoppingListCard extends StatelessWidget {
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall
-                                      ?.copyWith(color: muted),
+                                      ?.copyWith(
+                                        color: muted,
+                                        height: 1.1,
+                                      ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1638,24 +1677,36 @@ class _ShoppingListCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    _StatusBadge(completed: completed, isDarkMode: isDarkMode),
-                    PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: isDarkMode
-                            ? FreshSproutColors.darkTextMuted
-                            : FreshSproutColors.outline,
-                        size: 20,
-                      ),
-                      onSelected: (value) {
-                        if (value == 'delete') onDelete();
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text('Excluir'),
+                    const SizedBox(width: 6),
+                    _StatusBadge(
+                      completed: completed,
+                      isDarkMode: isDarkMode,
+                    ),
+                    SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: PopupMenuButton<String>(
+                        padding: EdgeInsets.zero,
+                        iconSize: 20,
+                        splashRadius: 18,
+                        constraints: const BoxConstraints(),
+                        icon: Icon(
+                          Icons.more_vert,
+                          color: isDarkMode
+                              ? FreshSproutColors.darkTextMuted
+                              : FreshSproutColors.outline,
+                          size: 20,
                         ),
-                      ],
+                        onSelected: (value) {
+                          if (value == 'delete') onDelete();
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Excluir'),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1730,7 +1781,6 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(left: 4, right: 2),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
         color: completed
@@ -1751,6 +1801,8 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         completed ? 'Concluída' : 'Em andamento',
+        maxLines: 1,
+        softWrap: false,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: completed
                   ? (isDarkMode

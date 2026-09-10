@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>NSCameraUsageDescription</key>
 	<string>O ListMarket usa a câmera para ler códigos de barras e etiquetas de preço no supermercado.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>O ListMarket usa o microfone para ditar o nome da lista de compras.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>O ListMarket usa reconhecimento de voz para preencher o nome da lista de compras.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

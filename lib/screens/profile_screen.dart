@@ -44,14 +44,10 @@ const _monthLong = [
 abstract final class _ProfileSpec {
   static final cardRadius = FreshSproutRadius.xlBorder;
   static final innerRadius = FreshSproutRadius.lgBorder;
-  static final buttonRadius = FreshSproutRadius.mdBorder;
   static const switchWidth = 44.0;
   static const switchHeight = 24.0;
   static const switchThumb = 20.0;
-  static const btnHPad = 14.0;
-  static const btnVPad = 6.0;
   static const iconBtnSize = 40.0;
-  static const headerIconSize = 36.0;
   static const sectionIconSize = 36.0;
   static const rowIconSize = 36.0;
   static const metricIconSize = 32.0;

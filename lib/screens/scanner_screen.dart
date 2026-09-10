@@ -243,7 +243,6 @@ class _PendingProduct {
     this.name = '',
     this.brand,
     this.price,
-    this.quantity = 1,
     this.barcode,
     this.imageUrl,
   });
@@ -251,7 +250,7 @@ class _PendingProduct {
   final String name;
   final String? brand;
   final double? price;
-  final int quantity;
+  final int quantity = 1;
   final String? barcode;
   final String? imageUrl;
 }

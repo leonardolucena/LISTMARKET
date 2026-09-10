@@ -404,6 +404,10 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
       .fold(0.0, (sum, item) => sum + item.price! * item.quantity);
 
   double _budgetCeiling(ShoppingList list) {
+    if (list.budgetCeiling != null && list.budgetCeiling! > 0) {
+      return list.budgetCeiling!;
+    }
+
     final priced = list.items.where((item) => item.price != null).toList();
     if (priced.isEmpty) return 220.0;
 

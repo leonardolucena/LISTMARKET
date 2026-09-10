@@ -31,13 +31,19 @@ class ShoppingListRepository {
     return ShoppingList.fromJson(Map<String, dynamic>.from(value));
   }
 
-  Future<ShoppingList> createList(String name) async {
+  Future<ShoppingList> createList(
+    String name, {
+    String emoji = '🛒',
+    double? budgetCeiling,
+  }) async {
     final now = DateTime.now();
     final list = ShoppingList(
       id: now.microsecondsSinceEpoch.toString(),
       name: name.trim(),
       createdAt: now,
       updatedAt: now,
+      emoji: emoji,
+      budgetCeiling: budgetCeiling,
     );
     await _save(list);
     return list;
